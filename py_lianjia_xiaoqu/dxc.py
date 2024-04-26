@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 from lxml import etree
@@ -5,7 +6,8 @@ from openpyxl import load_workbook
 import pandas as pd
 import threading
 import time
-# pyinstaller --onefile longteng.py
+# pyinstaller --onefile dxc.py
+
 
 
 class FileUtils:
@@ -38,6 +40,9 @@ session.headers = headers
 
 
 
+output_dir = "./books/"
+FileUtils.mkdirs(folder_path=output_dir)
+
 cturl_names = []
 #获取所有城市URL
 res = geturl(f"https://www.lianjia.com/city/")
@@ -54,35 +59,73 @@ print(cturl_names)
 
 # 定义一个函数，模拟耗时操作
 def task(cturlname):
-    output_dir = "./books/"
-    FileUtils.mkdirs(folder_path=output_dir)
-    output_file_path = os.path.join(output_dir, f"{cturlname['name']}.xlsx")
-
-    # 检查文件是否存在，若不存在则创建
-    if not os.path.isfile(output_file_path):
-        # 使用pandas创建一个空的Excel文件
-        df_empty = pd.DataFrame()
-        df_empty.to_excel(output_file_path, sheet_name='MySheet')
-
     res = geturl(f"{cturlname['url']}")
     if res is None:
         return
     tree = etree.HTML(res.text)
-    ct_xqurl_pagenum_text = str(tree.xpath("//div[starts-with(@class, 'page-box')]/@page-data")[0])
-    pagenum = int(ct_xqurl_pagenum_text.split(":")[1].split(",")[0])
-    cturlname['xqurl_names'] = []  # 当前城市所有小区
-    for i in range(1, pagenum + 1):  # 遍历当前城市的所有小区页码
-        thread = threading.Thread(target=sub_task, args=(cturlname, i))
+    links = tree.xpath("//div[@data-role='ershoufang']//a[contains(@title, '二手房')]/@href")
+    if len(links) == 0:
+        return
+
+    process_city_qy_threads = []
+    for i in range(0, len(links)):
+        ctqy_url =f"{cturlname['url']}"  + links[i].replace("/xiaoqu/", "")
+
+        thread = threading.Thread(target=process_city_qy, args=(ctqy_url,cturlname))
+        process_city_qy_threads.append(thread)
         thread.start()
+    # 等待所有子线程完成
+    for process_city_qy_thread in process_city_qy_threads:
+        process_city_qy_thread.join()
+
+
+    output_file_path = os.path.join(output_dir, f"{cturlname['name']}.xlsx")
+
+    xqdats = cturlname['xqurl_names']
+    # 创建 DataFrame 对象
+    df = pd.DataFrame(xqdats)
+    # 将数据写入 Excel 文件
+    df.to_excel(output_file_path, index=False)
+    print(f"数据已成功写入到 Excel 文件 '{output_file_path}' 中。")
+
+#多区域任务
+def process_city_qy(ctqy_url,cturlname):
+    cturlname['xqurl_names'] = []
+    res = geturl(ctqy_url)
+
+    if res is None:
+        return
+    tree = etree.HTML(res.text)
+
+    ct_xqurl_pagenum_text = ''
+    pagenum = 0
+    try:
+        ct_xqurl_pagenum_text = str(tree.xpath("//div[starts-with(@class, 'page-box')]/@page-data")[0])
+        pagenum = int(ct_xqurl_pagenum_text.split(":")[1].split(",")[0])
+    except Exception as e:
+        pagenum = 1
+
+    for i in range(1, pagenum + 1):
+        sub_task(cturlname, i, ctqy_url)
+
+    # sub_threads = []
+    # for i in range(1, pagenum + 1):
+    #     thread = threading.Thread(target=sub_task, args=(cturlname, i, ctqy_url))
+    #     sub_threads.append(thread)
+    #     thread.start()
+    #
+    # for sub_thread in sub_threads:
+    #     sub_thread.join()
 
 # 定义一个子任务函数
-def sub_task(cturlname, i):
-    res = geturl(f"{cturlname['url']}pg{i}/")
+def sub_task(cturlname, i,ctqy_url):
+    res = geturl(f"{ctqy_url}pg{i}/")
     if res is None:
         return
     ct_xq_html = res.text
     tree = etree.HTML(ct_xq_html)
     xqurl_name_html = tree.xpath("//div[@class='title']//a[contains(@href, 'xiaoqu')]")
+
     for j in range(0, len(xqurl_name_html)):  # 遍历当前页面的所有小区
         obj = {}  # 小区对象
         obj['xqname'] = xqurl_name_html[j].text  # 小区名字
@@ -102,15 +145,17 @@ def sub_task(cturlname, i):
             content_text = content_span[0].strip() if content_span else ""
             obj[label_text] = content_text
         print(obj)
-    time.sleep(1)  # 模拟耗时1秒的操作
+
 
 # 创建多个线程并启动
 threads = []
+
 for cturlname in cturl_names: #遍历所有城市
-    thread = threading.Thread(target=task, args=(cturlname))
+    thread = threading.Thread(target=task, args=(cturlname,))
     threads.append(thread)
     thread.start()
 
     # 等待所有线程执行完毕
-for thread in threads:
-    thread.join()
+for threadobj in threads:
+    threadobj.join()
+
