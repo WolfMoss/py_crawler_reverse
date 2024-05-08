@@ -5,7 +5,8 @@ import os
 from playwright.sync_api import Playwright, sync_playwright, expect
 from lxml import etree
 import codecs
-#msedge.exe --remote-debugging-port=8899 --user-data-dir="D:\codes\py_crawler_reverse\zhihu\userdata"
+#chrome.exe --remote-debugging-port=8899 --user-data-dir="userdata"
+#"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=8899 --user-data-dir="userdata"
 
 def scroll_to_bottom(page):
     page.evaluate("""() => {
@@ -33,13 +34,17 @@ class ZhiHu:
     def getpage(self,url, context):
         pagedata = {}
         pagedata['answers_text'] = []
+        pagedata['url'] = url  # 获取问题链接
         page = context.new_page()
+        pinglun = page.request.get("https://www.zhihu.com/api/v4/comment_v5/answers/3311054604/root_comment?order_by=score&limit=20&offset=")
+
         try:
             page.goto(url)
         except:
             print("超时", url)
         # page.wait_for_timeout(1000)
         page.wait_for_load_state("load")
+
         content = page.content()
         tree = etree.HTML(content)
         # 使用XPath表达式选择元素
@@ -48,8 +53,10 @@ class ZhiHu:
             # 直接寻找角色为button且包含文本"显示全部"的元素
             show_all_button = page.locator('button:text("显示全部")')
             show_all_button.click()
+
         content = page.content()
         pagedata['title'] = page.query_selector('h1').inner_text()  # 获取问题标题
+
         # 解析HTML字符串，创建一个HTML元素树
         tree = etree.HTML(content)
         # 使用XPath表达式选择元素
@@ -60,9 +67,9 @@ class ZhiHu:
         for element in elements:
             question_text = question_text + str(element.text) if element.text is not None else ""
         pagedata['question_text'] = question_text  # 获取问题正文
-        pagedata['url'] = url  # 获取问题链接
-        datas_pagedata.append(pagedata)
+
         scroll_to_bottom(page)
+
         content = page.content()
         tree = etree.HTML(content)
         # 使用XPath表达式选择元素
@@ -75,6 +82,8 @@ class ZhiHu:
             for p_element in element.xpath(".//p"):
                 answer_text =answer_text + str(p_element.text).replace("None", "")
             pagedata['answers_text'].append(answer_text)
+
+        datas_pagedata.append(pagedata)
         print(json.dumps(pagedata, ensure_ascii=False))
         page.close()
 
@@ -117,10 +126,12 @@ if __name__ == '__main__':
         # browser = playwright.chromium.connect_over_cdp('http://localhost:8899/')
         # context = browser.contexts[0]
         browser = playwright.chromium
+        ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
         context = browser.launch_persistent_context(
             user_data_dir=user_data_dir,
             accept_downloads=True,
-            headless=False
+            headless=False,
+            user_agent=ua
         )
         context.add_init_script(path='./stealth.min.js')
         #登录
