@@ -36,7 +36,6 @@ class ZhiHu:
         pagedata['answers_text'] = []
         pagedata['url'] = url  # 获取问题链接
         page = context.new_page()
-        pinglun = page.request.get("https://www.zhihu.com/api/v4/comment_v5/answers/3311054604/root_comment?order_by=score&limit=20&offset=")
 
         try:
             page.goto(url)
@@ -126,12 +125,10 @@ if __name__ == '__main__':
         # browser = playwright.chromium.connect_over_cdp('http://localhost:8899/')
         # context = browser.contexts[0]
         browser = playwright.chromium
-        ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
         context = browser.launch_persistent_context(
             user_data_dir=user_data_dir,
             accept_downloads=True,
-            headless=False,
-            user_agent=ua
+            headless=False
         )
         context.add_init_script(path='./stealth.min.js')
         #登录
