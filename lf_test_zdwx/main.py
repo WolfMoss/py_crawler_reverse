@@ -1,23 +1,22 @@
 import os
-import pickle
-
+from lxml import etree
+from urllib.parse import urlparse, parse_qs
 import requests
-import base64
 import json
-import subprocess
 import execjs
 
+#配置--------------------------------------
+tjuser = '图鉴账号'
+tjpsw = '图鉴密码'
 
-tjuser = 'wolfmoss'
-tjpsw = 'Ilikecs123'
-
-wxuserName = '15268317813'
-wxpsw = 'ilikecs123'
-
+wxuserName = '网校账号'
+wxpsw = '网校密码'
+#-----------------------------------------
 
 #定义--------------------------------------
+datas=[]
 wxpassword='' #加密密码
-
+cok = {}
 session = requests.Session()
 os.environ["NODE_PATH"] = "C:\\Users\\Administrator\\AppData\\Roaming\\npm\\node_modules"  # 这是node_modules在你系统中可能的位置，你需要根据你的系统环境来修改它
 
@@ -46,38 +45,6 @@ headers = {
 }
 
 
-
-# 一、图片文字类型(默认 3 数英混合)：
-# 1 : 纯数字
-# 1001：纯数字2
-# 2 : 纯英文
-# 1002：纯英文2
-# 3 : 数英混合
-# 1003：数英混合2
-#  4 : 闪动GIF
-# 7 : 无感学习(独家)
-# 11 : 计算题
-# 1005:  快速计算题
-# 16 : 汉字
-# 32 : 通用文字识别(证件、单据)
-# 66:  问答题
-# 49 :recaptcha图片识别
-# 二、图片旋转角度类型：
-# 29 :  旋转类型
-#
-# 三、图片坐标点选类型：
-# 19 :  1个坐标
-# 20 :  3个坐标
-# 21 :  3 ~ 5个坐标
-# 22 :  5 ~ 8个坐标
-# 27 :  1 ~ 4个坐标
-# 48 : 轨迹类型
-#
-# 四、缺口识别
-# 18 : 缺口识别（需要2张图 一张目标图一张缺口图）
-# 33 : 单缺口识别（返回X轴坐标 只需要1张图）
-# 五、拼图识别
-# 53：拼图识别
 def base64_api(uname, pwd, img, typeid):
     data = {"username": uname, "password": pwd, "typeid": typeid, "image": img}
     ers = requests.post("http://api.ttshitu.com/predict", json=data)
@@ -97,9 +64,9 @@ if os.path.exists('cookies.txt'):
     print('cookies.txt文件存在')
     # 从本地文件加载cookies
     with open('cookies.txt', 'r') as fr:
-        cookies = json.load(fr)
+        cok = json.load(fr)
     # 更新session中的cookies
-    session.cookies.update(cookies)
+    session.cookies.update(cok)
 else:
     print('cookies.txt文件不存在')
     session.get("https://user.wangxiao.cn/login", headers=headers)
@@ -123,19 +90,97 @@ else:
     payload['userName'] = wxuserName
     payload['password'] = wxpassword
     payload['imageCaptchaCode'] = imageCaptchaCode
-    a= session.post("https://user.wangxiao.cn/apis//login/passwordLogin",headers=headers, data=json.dumps(payload))
-    print(a.text)
+    rescks= session.post("https://user.wangxiao.cn/apis//login/passwordLogin",headers=headers, data=json.dumps(payload)).json()['data']
+    print(rescks)
+
+    cok['wxLoginUrl'] = "https://ks.wangxiao.cn/"
+    cok['autoLogin'] = "null"
+    cok['token'] = rescks['token']
+    cok['UserCookieName'] = rescks['userName']
+    cok['UserCookieName_'] = rescks['userName']
+    cok['OldUsername2'] = rescks['userNameCookies']
+    cok['OldUsername'] = rescks['userNameCookies']
+    cok['OldUsername2_'] = rescks['userNameCookies']
+    cok['OldUsername_'] = rescks['userNameCookies']
+    cok['OldPassword'] = rescks['passwordCookies']
+    cok['OldPassword_'] = rescks['passwordCookies']
 
     with open('cookies.txt', 'w') as fw:
-        json.dump(session.cookies.get_dict(), fw)
+        json.dump(cok, fw)
 
+session.get("https://ks.wangxiao.cn/", headers=headers)
+headers['Cookie']='; '.join([f'{k}={v}' for k, v in cok.items()])
+
+#随便请求一个界面测试是否登录成功
 payload = {}
 payload['practiceType'] = '1'
 payload['sign'] = 'jzs1'
 payload['subsign'] = '5166078fbf1eed222fe9'
 payload['day'] = '20240509'
 
-#headers['Cookie']='pc_586760398_exam=jz1; mantis6894=b37380d16233493e8de6ba5dccd7ff3c@6894; safedog-flow-item=; autoLogin=null; userInfo=%7B%22userName%22%3A%22pc_586760398%22%2C%22token%22%3A%2282a251dd-1881-41ea-aa47-0860797d65e7%22%2C%22headImg%22%3Anull%2C%22nickName%22%3A%22152****7813%22%2C%22sign%22%3A%22fangchan%22%2C%22isBindingMobile%22%3A%221%22%2C%22isSubPa%22%3A%220%22%2C%22userNameCookies%22%3A%22fhGIZv00%2Fstr839jUmWTBw%3D%3D%22%2C%22passwordCookies%22%3A%22Xq8yT02ddqK7XDJmMojLtw%3D%3D%22%7D; token=82a251dd-1881-41ea-aa47-0860797d65e7; UserCookieName=pc_586760398; OldUsername2=fhGIZv00%2Fstr839jUmWTBw%3D%3D; OldUsername=fhGIZv00%2Fstr839jUmWTBw%3D%3D; OldPassword=Xq8yT02ddqK7XDJmMojLtw%3D%3D; UserCookieName_=pc_586760398; OldUsername2_=fhGIZv00%2Fstr839jUmWTBw%3D%3D; OldUsername_=fhGIZv00%2Fstr839jUmWTBw%3D%3D; OldPassword_=Xq8yT02ddqK7XDJmMojLtw%3D%3D; register-sign=jz1; sign=jz1',
-
 questions_res= session.post("https://ks.wangxiao.cn/practice/listQuestions",headers=headers,  data=json.dumps(payload))
-print(questions_res.json())
+try:
+    print(questions_res.json())
+except:
+    print('登录失败，可能ck过期，删除cookies.txt重新运行')
+
+#获取所有科目
+subjects_res= session.get("https://ks.wangxiao.cn/",headers=headers)
+subjects_res.encoding='utf-8'
+subjects_res_html=subjects_res.content
+tree = etree.HTML(subjects_res_html)
+subjects_html = tree.xpath("//a[starts-with(@href, '/TestPaper/list?sign=')]")
+
+for subject_html in subjects_html:
+    subject={}
+    datas.append(subject)
+    subject['subject_name'] = subject_html.xpath("./text()")[0]
+    subject['subject_sign'] = subject_html.xpath("./@href")[0].split('=')[1]
+    print(subject['subject_name'], subject['subject_sign'])
+    #https://ks.wangxiao.cn/practice/listEveryday?sign=jzs1
+    subject['subject_url']= 'https://ks.wangxiao.cn/practice/listEveryday?sign='+subject['subject_sign']
+
+
+for subject in datas:
+    subject['everdays'] = []
+    listEveryday_res = session.get(subject['subject_url'],headers=headers)
+    listEveryday_res.encoding = 'utf-8'
+    tree = etree.HTML(listEveryday_res.content)
+    listEveryday_htmls = tree.xpath("//*[@class='test-item']")
+    for listEveryday_html in listEveryday_htmls:
+        sjobj = {}
+        subject['everdays'].append(sjobj)
+        #https://ks.wangxiao.cn/practice/getQuestion?practiceType=1&sign=jzs1&subsign=5166078fbf1eed222fe9&day=20240509
+        everdays_url="https://ks.wangxiao.cn"+ listEveryday_html.xpath('.//li')[3].xpath('.//a/@href')[0]
+        sjobj['everdays_url']=everdays_url
+        sjobj['questions'] = []
+        print(sjobj['everdays_url'])
+
+        # 使用urlparse()函数解析URL
+        parsed_url = urlparse(everdays_url)
+        # 使用parse_qs()函数解析出URL中的参数
+        params = parse_qs(parsed_url.query)
+
+        payload = {}
+        payload['practiceType'] = params['practiceType'][0]
+        payload['sign'] = params['sign'][0]
+        payload['subsign'] = params['subsign'][0]
+        payload['day'] = params['day'][0]
+        print(payload)
+        questions_res = session.post("https://ks.wangxiao.cn/practice/listQuestions", headers=headers,
+                                     data=json.dumps(payload))
+        sjobj['sj_title'] = questions_res.json()['title']
+        questions_datas = questions_res.json()['Data'][0]['questions']
+        for questions_data in questions_datas:
+            question={}
+            sjobj['questions'].append(question)
+            question['question_text']=questions_data['content']
+            print(sjobj['sj_title'],question['question_text'])
+            question['options']=[]
+            for option in questions_data['options']:
+                option_obj={}
+                option_obj['name']=option['name']
+                option_obj['content']=option['content']
+                question['options'].append(option_obj)
+
+print(datas)
