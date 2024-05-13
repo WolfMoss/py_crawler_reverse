@@ -12,15 +12,30 @@ class Helper:
         self.proxies = {}
 
     @staticmethod
+    def geturl_global_session(self,  url,headers,session = requests.Session(),encoding='utf-8'):
+        try:
+            session.headers = headers
+            response = session.get(url)
+            response.encoding = encoding
+            return response
+        except requests.exceptions.RequestException as e:
+            print(f"请求报错: {e}")
+            return None
+    @staticmethod
+    def posturl_global_session(self,  url,headers,params={},session = requests.Session(),encoding='utf-8'):
+        try:
+            session.headers = headers
+            response = session.post(url,json=params)
+            response.encoding = encoding
+            return response
+        except requests.exceptions.RequestException as e:
+            print(f"请求报错: {e}")
+            return None
+
+    @staticmethod
     def mkdirs(self,folder_path):
         """
         创建指定路径的目录（如果该目录不存在）。
-
-        参数:
-        folder_path (str): 需要创建的目录的路径。
-
-        返回值:
-        无
         """
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
@@ -32,18 +47,19 @@ class Helper:
         output_file_path = os.path.join(folder_path, f"{file_name}.txt")
         return output_file_path
 
-    def getProxy(self):
+    def getProxy(self,proxy_cycle):
         # 获取下一个代理
         try:
-            if not proxy_cycle or next(proxy_cycle, None) is None:
-                self.get_proxy_dataips()
+            if not proxy_cycle['iterator'] or next(proxy_cycle['iterator'], None) is None:
+                proxy_cycle['iterator']=self.get_proxy_dataips(proxy_cycle)
                 print('换IP池')
-            proxy_info = next(proxy_cycle)
+            proxy_info = next(proxy_cycle['iterator'])
             #print(proxy_info)
             proxiesip = proxy_info['ip']
             proxiesport = proxy_info['port']
             self.proxies['http'] = f'http://{proxiesip}:{proxiesport}'
             self.proxies['https'] = f'http://{proxiesip}:{proxiesport}'
+
         except StopIteration:
             print('没有代理了')
 
@@ -54,21 +70,29 @@ class Helper:
 
             dataips=res.json()['proxies']
             # 使用itertools.cycle无限循环列表
-            global proxy_cycle
-            proxy_cycle = iter(dataips)
+
+            return iter(dataips)
 
 
-    def choose_func_getproxy(self):
-        self.getProxy()
+    def choose_func_getproxy(self,proxy_cycle):
+        self.getProxy(proxy_cycle)
 
-    def geturl(self,url,headers, session=requests.session()):
+    def geturl_autoproxy(self,proxy_cycle,url,headers, session=requests.session()):
         try:
             session.headers = headers
             res = session.get(url, proxies=self.proxies)
-            if res.status_code != 200:
-                raise "请求不等于200"
             return res
         except Exception as e:
             # print('换IP：', e,proxies,url)
-            self.choose_func_getproxy()
+            self.choose_func_getproxy(proxy_cycle)
             return self.geturl(url, session, headers)
+
+    def geturl_autoproxy(self,proxy_cycle,url,headers,body={}, session=requests.session()):
+        try:
+            session.headers = headers
+            res = session.post(url, proxies=self.proxies,json=body)
+            return res
+        except Exception as e:
+            # print('换IP：', e,proxies,url)
+            self.choose_func_getproxy(proxy_cycle)
+            return self.geturl_autoproxy(url, session, headers,body)
