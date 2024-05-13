@@ -1,6 +1,6 @@
 import os
 import threading
-
+from lxml import etree
 import requests
 
 proxy_cycle = []
@@ -12,7 +12,14 @@ class Helper:
         self.proxies = {}
 
     @staticmethod
-    def geturl_global_session(self,  url,headers,session = requests.Session(),encoding='utf-8'):
+    def getXpath(content,xpathtext):
+        tree = etree.HTML(content)
+        # 使用XPath表达式选择元素
+        elements = tree.xpath(xpathtext)
+        return elements
+
+    @staticmethod
+    def geturl_global_session(url,headers,session = requests.Session(),encoding='utf-8'):
         try:
             session.headers = headers
             response = session.get(url)
@@ -22,7 +29,7 @@ class Helper:
             print(f"请求报错: {e}")
             return None
     @staticmethod
-    def posturl_global_session(self,  url,headers,params={},session = requests.Session(),encoding='utf-8'):
+    def posturl_global_session(url,headers,params={},session = requests.Session(),encoding='utf-8'):
         try:
             session.headers = headers
             response = session.post(url,json=params)

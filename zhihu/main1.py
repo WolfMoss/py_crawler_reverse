@@ -1,12 +1,13 @@
-
+import py_moss_helper
 import json
 import os
-
+from bs4 import BeautifulSoup
 from playwright.sync_api import Playwright, sync_playwright, expect
 from lxml import etree
 import codecs
 #chrome.exe --remote-debugging-port=8899 --user-data-dir="userdata"
 #"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=8899 --user-data-dir="userdata"
+
 
 def scroll_to_bottom(page):
     page.evaluate("""() => {
@@ -31,60 +32,60 @@ p_urls=[] #专栏文章集合
 datas_pagedata = []
 
 class ZhiHu:
+    def __init__(self):
+        self.helper = py_moss_helper.Helper()
+        self.page = context.new_page()
+
+        self.pagedata={}
+        self.pagedata['answers_objs'] = []
+        self.pagedata['url'] = ""
+        self.pagedata['answers_id'] = ""
+        self.pagedata['title'] = ""
+        self.pagedata['question_text'] = ""
+        self.pagejson={}
+
     def getpage(self,url, context):
-        pagedata = {}
-        pagedata['answers_text'] = []
-        pagedata['url'] = url  # 获取问题链接
-        page = context.new_page()
+        self.pagedata['url'] = url  # 获取问题链接
+        self.pagedata['answers_id'] = url.split('/')[-1]
 
-        try:
-            page.goto(url)
-        except:
-            print("超时", url)
-        # page.wait_for_timeout(1000)
-        page.wait_for_load_state("load")
+        a= self.page.goto(url)
+        self.pagejson =json.loads(str(self.getpage_json(a.text(),context)[0]))
 
-        content = page.content()
-        tree = etree.HTML(content)
-        # 使用XPath表达式选择元素
-        btn_elements = tree.xpath('//button[normalize-space(text())="显示全部"]')
-        if btn_elements:
-            # 直接寻找角色为button且包含文本"显示全部"的元素
-            show_all_button = page.locator('button:text("显示全部")')
-            show_all_button.click()
+        self.pagedata['title'] = self.page.query_selector('h1').inner_text()  # 获取问题标题
+        question_text_html = self.pagejson['initialState']['entities']['questions'][self.pagedata['answers_id']]['detail']  # 获取问题正文
+        # 提取纯文本
+        self.pagedata['question_text']=BeautifulSoup(question_text_html, 'lxml').get_text(separator=' ', strip=True)
 
-        content = page.content()
-        pagedata['title'] = page.query_selector('h1').inner_text()  # 获取问题标题
+        self.getpage_answers()
 
-        # 解析HTML字符串，创建一个HTML元素树
-        tree = etree.HTML(content)
-        # 使用XPath表达式选择元素
-        elements = tree.xpath(
-            '//div[@class="QuestionHeader"]//span[starts-with(@class, "RichText") and @itemprop="text"]/p')
-        # 打印所有选中元素的文本内容
-        question_text = ""
-        for element in elements:
-            question_text = question_text + str(element.text) if element.text is not None else ""
-        pagedata['question_text'] = question_text  # 获取问题正文
+        datas_pagedata.append(self.pagedata)
+        print(json.dumps(self.pagedata, ensure_ascii=False))
+        self.page.close()
 
-        scroll_to_bottom(page)
-
-        content = page.content()
-        tree = etree.HTML(content)
-        # 使用XPath表达式选择元素
-        as_elements = tree.xpath("//div[@class='List-item'][.//button[contains(@aria-label, '赞同')]]")
-        if not as_elements:
+    def getpage_json(self,htmltext, context):
+        script_content = py_moss_helper.Helper.getXpath(htmltext,"//script[@id='js-initialData']/text()")
+        if not script_content:
+            raise "文字内同脚本为空"
+        return script_content
+    def getpage_answers(self):
+        answersjson = self.pagejson['initialState']['entities']['answers']
+        for answer_id, answer_data in answersjson.items():
+            answer={}
+            answer['id']=answer_id
+            answer['text'] = BeautifulSoup(answer_data['content'], 'lxml').get_text(separator=' ',strip=True)
+            self.pagedata['answers_objs'].append(answer)
+        next_answer_url = self.pagejson['initialState']['question']['answers'][self.pagedata['answers_id']]['next']
+        self.getpage_next_answers(next_answer_url)
+    def getpage_next_answers(self,next_answer_url):
+        next_answer_json= page.goto(next_answer_url).json()
+        if len(next_answer_json['data'])==0:
             return
-        # 打印元素下面所P节点的文本内容
-        for element in as_elements:
-            answer_text = ""
-            for p_element in element.xpath(".//p"):
-                answer_text =answer_text + str(p_element.text).replace("None", "")
-            pagedata['answers_text'].append(answer_text)
-
-        datas_pagedata.append(pagedata)
-        print(json.dumps(pagedata, ensure_ascii=False))
-        page.close()
+        for answeritem in next_answer_json['data']:
+            answer={}
+            answer['id']=answeritem['target']['id']
+            answer['text'] = BeautifulSoup(answeritem['target']['content'], 'lxml').get_text(separator=' ',strip=True)
+            self.pagedata['answers_objs'].append(answer)
+        self.getpage_next_answers(next_answer_json['paging']['next'])
 
 def getpage_task(url, context):
     zhihu = ZhiHu()
