@@ -1,3 +1,5 @@
+import execjs
+
 import py_moss_helper
 import json
 import os
@@ -30,6 +32,7 @@ def scroll_to_bottom(page):
 question_urls=[] #问题帖子集合
 p_urls=[] #专栏文章集合
 datas_pagedata = []
+jscode = open("1.js", "r", encoding="utf-8").read()
 
 class ZhiHu:
     def __init__(self):
@@ -56,7 +59,9 @@ class ZhiHu:
         # 提取纯文本
         self.pagedata['question_text']=BeautifulSoup(question_text_html, 'lxml').get_text(separator=' ', strip=True)
 
-        self.getpage_answers()
+        self.getpage_answers() #获取回答
+
+
 
         datas_pagedata.append(self.pagedata)
         print(json.dumps(self.pagedata, ensure_ascii=False))
@@ -74,6 +79,19 @@ class ZhiHu:
             answer['id']=answer_id
             answer['text'] = BeautifulSoup(answer_data['content'], 'lxml').get_text(separator=' ',strip=True)
             self.pagedata['answers_objs'].append(answer)
+
+            #测试
+            pl_url = f"https://www.zhihu.com/api/v4/comment_v5/answers/{answer_id}/root_comment?order_by=score&limit=20&offset="
+            doccookie = self.page.evaluate("""() => {
+                return document.cookie
+            }""")
+            # 调js
+            #读1.js
+
+            exec_js = execjs.compile(jscode)
+            zse93 = exec_js.call('solution', [pl_url, doccookie])
+            print(zse93)
+
         next_answer_url = self.pagejson['initialState']['question']['answers'][self.pagedata['answers_id']]['next']
         self.getpage_next_answers(next_answer_url)
     def getpage_next_answers(self,next_answer_url):
@@ -90,6 +108,16 @@ class ZhiHu:
 def getpage_task(url, context):
     zhihu = ZhiHu()
     zhihu.getpage(url, context)
+    # 爬评论
+    for answer in zhihu.pagedata['answers_objs']:
+        answer_id = answer['id']
+        pl_url = f"https://www.zhihu.com/api/v4/comment_v5/answers/{answer_id}/root_comment?order_by=score&limit=20&offset="
+        doccookie =zhihu.page.evaluate("""() => {
+            return document.cookie
+        }""")
+        #调js
+        exec_js = execjs.compile("")
+        zse93 =exec_js.call('solution', [pl_url, doccookie])
 
 if __name__ == '__main__':
 
