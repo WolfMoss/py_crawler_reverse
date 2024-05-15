@@ -6,10 +6,10 @@ import json
 import execjs
 
 #配置--------------------------------------
-tjuser = '图鉴账号'
+tjuser = '图鉴用户名'
 tjpsw = '图鉴密码'
 
-wxuserName = '网校账号'
+wxuserName = '网校用户名'
 wxpsw = '网校密码'
 #-----------------------------------------
 
@@ -90,7 +90,8 @@ else:
     payload['userName'] = wxuserName
     payload['password'] = wxpassword
     payload['imageCaptchaCode'] = imageCaptchaCode
-    rescks= session.post("https://user.wangxiao.cn/apis//login/passwordLogin",headers=headers, data=json.dumps(payload)).json()['data']
+    res = session.post("https://user.wangxiao.cn/apis//login/passwordLogin",headers=headers, data=json.dumps(payload))
+    rescks= res.json()['data']
     print(rescks)
 
     cok['wxLoginUrl'] = "https://ks.wangxiao.cn/"

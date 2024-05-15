@@ -845,5 +845,5 @@ require("./sdk.js")
     u.push = s.bind(null, u.push.bind(u))
 }();
 //# sourceMappingURL=runtime.app.a1c47abaaaee233410e9.js.map
-console.log(self.loder(1514).ZP("dsfsdffds"));
-self.D= self.loder(1514).ZP;
+//self.loder(61763)
+self.D=self.loder(1514).ZP
