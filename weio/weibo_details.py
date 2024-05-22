@@ -30,7 +30,8 @@ with sync_playwright() as playwright:
     context.add_init_script(path='./stealth.min.js')
     # 登录
     gpage = context.new_page()
-    gpage.goto("https://m.weibo.cn/")
+    gpage.goto("https://m.weibo.cn")
+    print(gpage.content())
     dengdai = True
     while dengdai:
         cookies = gpage.context.cookies('https://m.weibo.cn')
