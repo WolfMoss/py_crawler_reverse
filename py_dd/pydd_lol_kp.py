@@ -1,17 +1,31 @@
 from paddleocr import PaddleOCR, draw_ocr
-import time
-import cv2
-import numpy as np
-import mss
-from PIL import Image
-import io
+from datetime import datetime
+ocr = PaddleOCR()
 import mss.tools
 import pygetwindow as gw
 import pyautogui
-ocr = PaddleOCR()
+import mss
+import cv2
+import keyboard
+import time
+import asyncio
+import numpy as np
+from PIL import Image
+import io
+from ctypes import *
+dd_dll = windll.LoadLibrary('E:\codes\py_crawler_reverse\py_dd\dd40605x64.dll')
+time.sleep(2)
+st = dd_dll.DD_btn(0) #DD Initialize
+if st==1:
+    print("OK")
+else:
+    print("Error")
+    exit(101)
 
-
-
+# 预加载所有需要找图的模板图+++++++++++++++++++++++++++++
+h_pai = 'h.PNG'
+h_pai_template = cv2.imread(h_pai, 0)
+#----------------------------------------------
 
 # 获取特定窗口的标题++++++++++++++++++++++++++++++++++
 # 你想要查找的窗口标题的部分字符串
@@ -28,25 +42,22 @@ def find_window_by_title(partial_title):
     else:
         raise Exception("没有找到匹配的窗口。")
 
-window = find_window_by_title("图片查看")
-x, y, width, height = window.left, window.top, window.width, window.height
-monitor = {
-    'left': x,
-    'top': y,
-    'width': width,
-    'height': height
-}
-#----------------------------------------------
-
-# 预加载所有需要找图的模板图+++++++++++++++++++++++++++++
-template_path = '1.png'
-# 读取模板图像和目标图像
-template = cv2.imread(template_path, 0)
+# window = find_window_by_title("League of Legends (TM) Client")
+# x, y, width, height = window.left, window.top, window.width, window.height
+# monitor = {
+#     'left': x,
+#     'top': y,
+#     'width': width,
+#     'height': height
+# }
 #----------------------------------------------
 
 #定义方法+++++++++++++++++++++++++++++++++++++++
+#移动鼠标
 def movemouse(location):
     pyautogui.moveTo(location[0] + 10, location[1] + 10)
+
+#找字
 def ocrtest(wenzi,monitor):
     with mss.mss() as sct:
         sct_img = sct.grab(monitor)
@@ -69,9 +80,10 @@ def ocrtest(wenzi,monitor):
             if wenzi in text:
                 print(f'识别到的文字: {text}, 置信度: {confidence}')
                 print(f'文字坐标: {box}')
-                lefttop=(box[0][0]+x,box[0][1]+y)
+                lefttop=(box[0][0]+monitor['left'],box[0][1]+monitor['top'])
                 return lefttop
 
+#找图
 def find_image(template,monitor):
 
     with mss.mss() as sct:
@@ -104,9 +116,13 @@ def find_image(template,monitor):
     # cv2.destroyAllWindows()
 
     # 返回匹配位置的绝对坐标
-    lefttop=(max_loc[0]+x,max_loc[1]+y)
-    return lefttop
+    if max_val>0.8:
+        lefttop=(max_loc[0]+monitor['left'],max_loc[1]+monitor['top'])
+        return lefttop
+    else:
+        return False
 
+#区域找色，返回颜色占比
 def get_color_ratio(monitor,lower_redsz,upper_redsz):
 
     # 读取图片
@@ -152,6 +168,37 @@ def get_color_ratio(monitor,lower_redsz,upper_redsz):
         else:
             print("没有找到红色像素")
 
+#循环找图，超出指定秒报错
+def getpic(template, monitor,max_time_seconds):
+    start_time = time.time()
+    getit = False
+    while getit == False:
+        location = find_image(template, monitor)
+        if location:
+            print(f"找到图片在位置: {location}")
+            getit = True
+            return location
+        else:
+            if time.time() - start_time > max_time_seconds:
+                print(f"超过最大循环时间 {max_time_seconds} 秒，未找到图片")
+                return False
+            time.sleep(0.1)
+
+#循环找字，超出指定秒报错
+def getpic(wenzi,monitor,max_time_seconds):
+    start_time = time.time()
+    getit = False
+    while getit == False:
+        location = ocrtest(wenzi, monitor)
+        if location:
+            print(f"找到{wenzi}在位置: {location}")
+            getit = True
+            return location
+        else:
+            if time.time() - start_time > max_time_seconds:
+                print(f"超过最大循环时间 {max_time_seconds} 秒，未找到{wenzi}")
+                return False
+            time.sleep(0.1)
 #------------------------------------------------------------
 
 
@@ -167,5 +214,40 @@ def get_color_ratio(monitor,lower_redsz,upper_redsz):
 #----------------------------------------------
 
 #找颜色++++++++++++++++++++++++++++++++++++++++++++
-get_color_ratio(monitor,[0, 120, 70],[10, 255, 255])
+#get_color_ratio(monitor,[0, 120, 70],[10, 255, 255])
 #----------------------------------------------
+
+kapai_monitor = {
+    'left': 834,
+    'top': 930,
+    'width': 46,
+    'height': 46
+}
+
+#黄牌
+def pressw():
+    print("主动按下W")
+    dd_dll.DD_key(302, 1)
+    dd_dll.DD_key(302, 2)
+    print("当前时间（时:分:秒.毫秒）：", datetime.now().strftime("%H:%M:%S.%f"))
+    loczb = getpic(h_pai_template, kapai_monitor,5)
+    if loczb :
+        dd_dll.DD_key(302, 1)
+        dd_dll.DD_key(302, 2)
+
+def presse():
+    print("主动按下W")
+    dd_dll.DD_key(302, 1)
+    dd_dll.DD_key(302, 2)
+    print("当前时间（时:分:秒.毫秒）：", datetime.now().strftime("%H:%M:%S.%f"))
+    loczb = getpic(h_pai_template, kapai_monitor,5)
+    if loczb :
+        dd_dll.DD_key(302, 1)
+        dd_dll.DD_key(302, 2)
+
+# 注册全局热键，当按下Ctrl+Shift+a时触发my_function
+keyboard.add_hotkey('space', pressw)
+keyboard.add_hotkey('e', presse)
+
+# 进入阻塞状态，等待热键触发
+keyboard.wait('esc')  # 使用esc键退出监听
