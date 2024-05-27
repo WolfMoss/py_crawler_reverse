@@ -13,7 +13,10 @@ import numpy as np
 from PIL import Image
 import io
 from ctypes import *
-dd_dll = windll.LoadLibrary('E:\codes\py_crawler_reverse\py_dd\dd40605x64.dll')
+import os
+cur_path = os.path.abspath(os.path.dirname(__file__))
+dll_path = os.path.join(cur_path, 'dd40605x64.dll')
+dd_dll = windll.LoadLibrary(dll_path)
 time.sleep(2)
 st = dd_dll.DD_btn(0) #DD Initialize
 if st==1:

@@ -2,10 +2,13 @@
 from datetime import datetime
 from ctypes import *
 import time
+#获取当前脚本所在目录
+import os
+cur_path = os.path.abspath(os.path.dirname(__file__))
 
 print("Load DD!")
-
-dd_dll = windll.LoadLibrary('E:\codes\py_crawler_reverse\py_dd\dd40605x64.dll')
+dll_path = os.path.join(cur_path, 'dd40605x64.dll')
+dd_dll = windll.LoadLibrary(dll_path)
 time.sleep(2)
 
 st = dd_dll.DD_btn(0) #DD Initialize
