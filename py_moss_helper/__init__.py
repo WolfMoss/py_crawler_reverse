@@ -54,6 +54,15 @@ class Helper:
         output_file_path = os.path.join(folder_path, f"{file_name}.txt")
         return output_file_path
 
+    #返回当前脚本路径下的userdata文件夹绝对路径
+    @staticmethod
+    def get_userdata_path():
+        # 获取当前代码文件所在的目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # 拼接文件路径
+        user_data_dir = os.path.join(current_dir, 'userdata')
+        return  user_data_dir
+
     def getProxy(self,proxy_cycle):
         # 获取下一个代理
         try:

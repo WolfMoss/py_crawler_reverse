@@ -1,40 +1,84 @@
 import requests
-import execjs
 session = requests.Session()
-
-url = "https://www.zhipin.com/wapi/zpgeek/search/joblist.json?scene=1&query=Java&city=101010100&experience=&payType=&partTime=&degree=&industry=&scale=&stage=&position=&jobType=&salary=&multiBusinessDistrict=&multiSubway=&page=1&pageSize=30"
-
-payload = {}
-headers = {
-  'accept': 'application/json, text/plain, */*',
-  'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0',
-  'x-requested-with': 'XMLHttpRequest'
-}
-response = session.request("GET", url, headers=headers, data=payload)
-print(response.json())
-name= response.json()['zpData']['name']
-seed= response.json()['zpData']['seed']
-ts= response.json()['zpData']['ts']
-
-jscode = open("1.js", "r", encoding="utf-8").read()
-exec_js = execjs.compile(jscode)
-
-#zse96_md5 = exec_js.call('justmd5', pl_url, cookie_string)
+import execjs
+import py_moss_helper
+import json
+from playwright.sync_api import Playwright, sync_playwright, expect
 
 
+url = "https://www.zhipin.com/wapi/zpgeek/search/joblist.json?scene=1&query=Java&city=101010100&experience=&payType=&partTime=&degree=&industry=&scale=&stage=&position=&jobType=&salary=&multiBusinessDistrict=&multiSubway=&page=1&pageSize=30&page=1"
+#
+# payload = {}
+# headers = {
+#   'accept': 'application/json, text/plain, */*',
+#   'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+#   'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0',
+#   'x-requested-with': 'XMLHttpRequest'
+# }
+# response = session.request("GET", url, headers=headers, data=payload)
+# print(response.json())
+# name= response.json()['zpData']['name']
+# seed= response.json()['zpData']['seed']
+# ts= response.json()['zpData']['ts']
 
-url = "https://www.zhipin.com/wapi/zpgeek/search/joblist.json?scene=1&query=Java&city=101010100&experience=&payType=&partTime=&degree=&industry=&scale=&stage=&position=&jobType=&salary=&multiBusinessDistrict=&multiSubway=&page=1&pageSize=30"
+with sync_playwright() as playwright:
+  # browser = playwright.chromium.connect_over_cdp('http://localhost:8899/')
+  # context = browser.contexts[0]
+  browser = playwright.chromium
+  context = browser.launch_persistent_context(
+    user_data_dir=py_moss_helper.Helper.get_userdata_path(),
+    accept_downloads=True,
+    headless=False,
+    bypass_csp=True
+  )
+  context.add_init_script(path='./stealth.min.js')
+  # 登录
+  gpage = context.new_page()
 
-payload = {}
-headers = {
-  'accept': 'application/json, text/plain, */*',
-  'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-  'cookie': '__zp_stoken__=0933fw4Zxw6APRAEOCA4GYk9RXn15wrZ4dGlHXsKEZVbCnEpBXEDColnDhcKYWsKLwqDCucK6wohnwoJpwr7Cu8O9wpfCrcKwwq5Lw7bCqsKWxJrDv8K7wr7DscKlwrPCpTA0CwAAAAx%2FfHx8cH98CQkVBxQUFAgGFRUVCUUuwpBmPDpEMy1OQUoNSV9TQ1hNAWVCTDMzZFcKADMmMzMzN8KxwrPCtwvCvsK4wrcLwrrCt8OECzM7NzjCs8O9JiHCuMOYBzUjwrjCpQfCsD0UwrPDqwfDh1ZnEMK7wrLCoy8xMcK3xLlEMB05OzA6MDwwMDAtPEXDg2VnHMKwwrbDnSA3GzgwMEVFMDAwOzs6LDBEXiIwMyc3AQgICQchRcK3Q8K4w5YwMA%3D%3D;expires=Wed, 29 May 2024 22:00:43 GMT;domain=.zhipin.com;path=/; __zp_sname__=4ae04288; __zp_sseed__=InZUA4w/K1dI3DRsaDIFu4ahiw70778MBINwD4YWBDU=; __zp_sts__=1716789687369',
-  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0',
-  'x-requested-with': 'XMLHttpRequest'
-}
+  gpage.goto("https://www.zhipin.com/web/geek/job?query=Java&city=101010100&page=1")
+  try:
+    gpage.wait_for_load_state('networkidle',timeout=10000)
+  except Exception as e:
+    print(f"Page loading timed out: {e}")
 
-response = session.request("GET", url, headers=headers, data=payload)
+  gpage.add_script_tag(path="./2.js")
 
-print(response.text)
+  #获取cookie
+  cookies = gpage.context.cookies('https://www.zhipin.com')
+  cookie_string = '; '.join([f"{c['name']}={c['value']}" for c in cookies])
+  headers = {
+    'accept': 'application/json, text/plain, */*',
+    'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0',
+    'x-requested-with': 'XMLHttpRequest',
+    'cookie': cookie_string
+  }
+
+  page = context.new_page()
+  res = page.request.get(url, headers=headers)
+
+  set_cookie_headers = res.headers['set-cookie']
+  __zp_sseed__ = set_cookie_headers.split(';')[0].split('=')[1] + '='
+  __zp_sts__ = set_cookie_headers.split('__zp_sts__=')[1].split(';')[0]
+  print('__zp_sseed__:::', __zp_sseed__)
+  print('__zp_sts__:::', __zp_sts__)
+  __zp_stoken__ = gpage.evaluate(f"window.MF('{__zp_sseed__}',{__zp_sts__})")
+  print(__zp_stoken__)
+
+
+  #循环2-10
+  for i in range(1,11):
+    url = f"https://www.zhipin.com/wapi/zpgeek/search/joblist.json?scene=1&query=Java&city=101010100&experience=&payType=&partTime=&degree=&industry=&scale=&stage=&position=&jobType=&salary=&multiBusinessDistrict=&multiSubway=&page=1&pageSize=30&page={i}"
+    res = page.request.get(url, headers=headers)
+    print(res.json()['zpData']['jobList'])
+    set_cookie_headers = res.headers['set-cookie']
+    __zp_sseed__=set_cookie_headers.split(';')[0].split('=')[1] + '='
+    __zp_sts__=set_cookie_headers.split('__zp_sts__=')[1].split(';')[0]
+    print('__zp_sseed__:::',__zp_sseed__)
+    print('__zp_sts__:::', __zp_sts__)
+    __zp_stoken__ =gpage.evaluate(f"window.MF('{__zp_sseed__}',{__zp_sts__})")
+    print(__zp_stoken__)
+    headers['cookie'] = __zp_stoken__
+
+
+  context.close()
