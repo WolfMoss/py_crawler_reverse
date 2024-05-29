@@ -55,30 +55,41 @@ with sync_playwright() as playwright:
   }
 
   page = context.new_page()
-  res = page.request.get(url, headers=headers)
 
-  set_cookie_headers = res.headers['set-cookie']
-  __zp_sseed__ = set_cookie_headers.split(';')[0].split('=')[1] + '='
-  __zp_sts__ = set_cookie_headers.split('__zp_sts__=')[1].split(';')[0]
-  print('__zp_sseed__:::', __zp_sseed__)
-  print('__zp_sts__:::', __zp_sts__)
-  __zp_stoken__ = gpage.evaluate(f"window.MF('{__zp_sseed__}',{__zp_sts__})")
-  print(__zp_stoken__)
+  # res = page.request.get(url, headers=headers)
+  #
+  # set_cookie_headers = res.headers['set-cookie']
+  # __zp_sseed__ = set_cookie_headers.split(';')[0].split('=')[1] + '='
+  # __zp_sts__ = set_cookie_headers.split('__zp_sts__=')[1].split(';')[0]
+  # print('__zp_sseed__:::', __zp_sseed__)
+  # print('__zp_sts__:::', __zp_sts__)
+  # __zp_stoken__ = gpage.evaluate(f"window.MF('{__zp_sseed__}',{__zp_sts__})")
+  # print(__zp_stoken__)
 
 
   #循环2-10
-  for i in range(1,11):
-    url = f"https://www.zhipin.com/wapi/zpgeek/search/joblist.json?scene=1&query=Java&city=101010100&experience=&payType=&partTime=&degree=&industry=&scale=&stage=&position=&jobType=&salary=&multiBusinessDistrict=&multiSubway=&page=1&pageSize=30&page={i}"
+  for i in range(2,11):
+
+    with open('pack.js', 'r', encoding='utf-8') as file:
+        js_code = file.read()
+    # 在页面中执行 JavaScript 文件
+    gpage.evaluate(js_code)
+    cookies = gpage.context.cookies('https://www.zhipin.com')
+    cookie_string = '; '.join([f"{c['name']}={c['value']}" for c in cookies])
+    headers['cookie'] = cookie_string
+
+    url = f"https://www.zhipin.com/wapi/zpgeek/search/joblist.json?scene=1&query=Java&city=101010100&experience=&payType=&partTime=&degree=&industry=&scale=&stage=&position=&jobType=&salary=&multiBusinessDistrict=&multiSubway=&page={i}&pageSize=30"
     res = page.request.get(url, headers=headers)
     print(res.json()['zpData']['jobList'])
-    set_cookie_headers = res.headers['set-cookie']
-    __zp_sseed__=set_cookie_headers.split(';')[0].split('=')[1] + '='
-    __zp_sts__=set_cookie_headers.split('__zp_sts__=')[1].split(';')[0]
-    print('__zp_sseed__:::',__zp_sseed__)
-    print('__zp_sts__:::', __zp_sts__)
-    __zp_stoken__ =gpage.evaluate(f"window.MF('{__zp_sseed__}',{__zp_sts__})")
-    print(__zp_stoken__)
-    headers['cookie'] = __zp_stoken__
-
+    # set_cookie_headers = res.headers['set-cookie']
+    # __zp_sseed__=set_cookie_headers.split(';')[0].split('=')[1] + '='
+    # __zp_sts__=set_cookie_headers.split('__zp_sts__=')[1].split(';')[0]
+    # print('__zp_sseed__:::',__zp_sseed__)
+    # print('__zp_sts__:::', __zp_sts__)
+    # __zp_stoken__ =gpage.evaluate(f"window.MF('{__zp_sseed__}',{__zp_sts__})")
+    # print(__zp_stoken__)
+    # headers['cookie'] = __zp_stoken__
+    #延迟1秒
+    page.wait_for_timeout(1000)
 
   context.close()
