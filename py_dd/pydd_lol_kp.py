@@ -104,20 +104,6 @@ def find_image(template,monitor):
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
     print(max_val, max_loc)
 
-    # # 计算模板图像的宽度和高度
-    # w, h = template.shape[::-1]
-    # 根据最大值位置绘制矩形框，标识出匹配位置
-    #top_left = max_loc
-    # bottom_right = (top_left[0] + w, top_left[1] + h)
-    # cv2.rectangle(target, top_left, bottom_right, 255, 2)
-    #
-    # # 显示结果
-    #
-    # cv2.namedWindow('Matching Result', cv2.WINDOW_NORMAL)
-    # cv2.imshow('Matching Result', target)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
     # 返回匹配位置的绝对坐标
     if max_val>0.8:
         lefttop=(max_loc[0]+monitor['left'],max_loc[1]+monitor['top'])

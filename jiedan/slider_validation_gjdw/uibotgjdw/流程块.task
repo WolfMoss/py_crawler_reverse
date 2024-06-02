@@ -1,0 +1,17 @@
+Dim hWeb,sRet,objPoint,arrRet,iRet,pRet,iPID
+
+hWeb = WebBrowser.Create("chrome","",30000,{"bContinueOnError":false,"iDelayAfter":300,"iDelayBefore":200,"sBrowserPath":"","sStartArgs":"--remote-debugging-port=9222"})
+iRet = WebBrowser.GoURL(hWeb,"https://95598.cn/osgweb/login",true,{},30000,{"bContinueOnError":false,"iDelayAfter":300,"iDelayBefore":200})
+iPID = App.Run('''E:\codes\py_crawler_reverse\slider_validation\dist\slider_validation.exe''', 0, 1)
+Delay(30000)
+Window.SetActive(@ui"窗口_95598智能互动网站-欢迎登录-GoogleChrome3")
+Window.Show(@ui"窗口_95598智能互动网站-欢迎登录-GoogleChrome3","max")
+UiElement.Wait(@ui"窗口_95598智能互动网站-欢迎登录-GoogleChrome3","show",10000,{"bContinueOnError":false,"iDelayAfter":300,"iDelayBefore":200})
+Mouse.Action(@ui"块级元素<div>1","left","click",10000,{"bContinueOnError": false, "iDelayAfter": 300, "iDelayBefore": 200, "bSetForeground": true, "sCursorPosition": "Center", "iCursorOffsetX": 0, "iCursorOffsetY": 0, "sKeyModifiers": [],"sSimulate": "simulate", "bMoveSmoothly": false})
+Mouse.Action(@ui"文本<span>_密码登录","left","click",10000,{"bContinueOnError": false, "iDelayAfter": 300, "iDelayBefore": 200, "bSetForeground": true, "sCursorPosition": "Center", "iCursorOffsetX": 0, "iCursorOffsetY": 0, "sKeyModifiers": [],"sSimulate": "simulate", "bMoveSmoothly": false})
+Keyboard.InputText(@ui"输入控件<input>1","13623050394",true,20,10000,{"bContinueOnError": false, "iDelayAfter": 300, "iDelayBefore": 500, "bSetForeground": true, "sSimulate": "message", "bValidate": false, "bClickBeforeInput": false})
+Keyboard.InputText(@ui"输入控件<input>2","Hzk910805@",true,20,10000,{"bContinueOnError": false, "iDelayAfter": 300, "iDelayBefore": 500, "bSetForeground": true, "sSimulate": "message", "bValidate": false, "bClickBeforeInput": false})
+Mouse.Action(@ui"文本<span>","left","click",10000,{"bContinueOnError": false, "iDelayAfter": 300, "iDelayBefore": 200, "bSetForeground": true, "sCursorPosition": "Center", "iCursorOffsetX": 0, "iCursorOffsetY": 0, "sKeyModifiers": [],"sSimulate": "simulate", "bMoveSmoothly": false})
+Mouse.Action(@ui"文本<span>_登录","left","click",10000,{"bContinueOnError": false, "iDelayAfter": 300, "iDelayBefore": 200, "bSetForeground": true, "sCursorPosition": "Center", "iCursorOffsetX": 0, "iCursorOffsetY": 0, "sKeyModifiers": [],"sSimulate": "simulate", "bMoveSmoothly": false})
+iRet = WebBrowser.WaitPage(hWeb,@ui"文本<span>_账户余额查询",60000,{"bContinueOnError":false,"iDelayAfter":300,"iDelayBefore":200})
+TracePrint("登录成功")
