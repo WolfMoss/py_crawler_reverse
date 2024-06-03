@@ -136,13 +136,6 @@ def getpage_task(url, context):
 
     zhihu.page.close()
 if __name__ == '__main__':
-
-    #获取当前代码文件所在的目录
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    #拼接文件路径
-    user_data_dir = os.path.join(current_dir, 'userdata')
-
-
     # 打开并读取HTML文件
     with codecs.open('1.html', 'r', encoding='utf-8') as file:
         html_content = file.read()
@@ -171,7 +164,7 @@ if __name__ == '__main__':
         # context = browser.contexts[0]
         browser = playwright.chromium
         context = browser.launch_persistent_context(
-            user_data_dir=user_data_dir,
+            user_data_dir='user_data_dir1',
             accept_downloads=True,
             headless=False,
             bypass_csp = True
