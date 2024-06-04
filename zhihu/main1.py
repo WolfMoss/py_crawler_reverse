@@ -164,7 +164,7 @@ if __name__ == '__main__':
         # context = browser.contexts[0]
         browser = playwright.chromium
         context = browser.launch_persistent_context(
-            user_data_dir='user_data_dir1',
+            user_data_dir='userdata',
             accept_downloads=True,
             headless=False,
             bypass_csp = True

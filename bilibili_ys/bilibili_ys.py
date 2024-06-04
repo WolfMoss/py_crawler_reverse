@@ -1,9 +1,25 @@
 import asyncio
 import json
-from datetime import datetime, timedelta
-from lxml import etree
+from datetime import datetime
 import traceback
 from playwright.async_api import async_playwright
+
+#随机弹幕
+def random_danmu(i):
+    danmu_content = [
+        "好菜啊，这个游戏太难了！",
+        "666，主播太强了！",
+        "快来围观，这里有个大神在玩游戏！",
+        "哈哈，主播被打败了！",
+        "加油加油，拿下这个BOSS！",
+        "这个技能好厉害，我也想学！",
+        "看着主播打游戏，心情好舒畅！",
+        "主播的操作简直就是艺术！",
+        "新来的观众，点个关注支持下！",
+        "主播好帅啊，一言不合就开启操作秀！"
+    ]
+
+    return danmu_content[i]
 
 async def open_browser_fans(userobj):
     try:
@@ -16,12 +32,13 @@ async def open_browser_fans(userobj):
             username = userobj[usertype]
             psw = userobj[sorted(userobj.keys())[1]]
             browser = await p.chromium.launch_persistent_context(
-                user_data_dir=username,
+                user_data_dir='userdata/'+username,
                 accept_downloads=True,
                 headless=False,
                 bypass_csp=True,
                 #executable_path=edge_path
-                channel="msedge"
+                channel="msedge",
+                args=['--start-maximized',"--disable-blink-features=AutomationControlled"],viewport={"width": 1920, "height": 1080}, no_viewport=True
 
             )
             await browser.add_init_script(path='./stealth.min.js')
@@ -47,15 +64,36 @@ async def open_browser_fans(userobj):
 
             #跳转到直播间
             await page.goto(zb_zbj_url)
+            await page.wait_for_timeout(2000)
 
-            #到第二天发弹幕6条，牛娃牛蛙1个
+
+
+            #等待到第二天发弹幕6条，牛娃牛蛙1个
             while True:
+
+
                 print(username,'开始获取当前时间')
                 # 获取当前时间
                 current_time_str  = await page.evaluate("new Date().toLocaleTimeString()")
                 current_time = datetime.strptime(current_time_str, '%H:%M:%S').time()
                 if current_time >datetime.strptime('0:01:00', '%H:%M:%S').time() and current_time < datetime.strptime('1:00:00', '%H:%M:%S').time():
                     print(username,'到第二天发弹幕6条，牛娃牛蛙1个')
+
+                    # 循环6次
+                    for i in range(8):
+                        # 输入文字到当前焦点所在的元素（文本框）
+                        await page.mouse.click(1559, 880)
+                        await page.wait_for_timeout(1000)
+                        await page.keyboard.type(random_danmu(i));
+                        await page.click('span.txt:text("发送")')
+                        await page.wait_for_timeout(2000)
+
+                    await page.mouse.click(1178, 891)
+                    await page.wait_for_timeout(1000)
+                    await page.mouse.move(1230, 676)
+                    await page.wait_for_timeout(1000)
+                    await page.mouse.click(1228, 734)
+
                     break
                 else:
                     print(username,'还没到第二天')
@@ -77,12 +115,13 @@ async def open_browser_zb(userobj):
             usertype = sorted(userobj.keys())[0]
             username = userobj[usertype]
             browser = await p.chromium.launch_persistent_context(
-                user_data_dir=username,
+                user_data_dir='userdata/'+ username,
                 accept_downloads=True,
                 headless=False,
                 bypass_csp=True,
                 #executable_path=edge_path
-                channel="msedge"
+                channel="msedge",
+                args=['--start-maximized',"--disable-blink-features=AutomationControlled"],viewport={"width": 1920, "height": 1080}, no_viewport=True
             )
             await browser.add_init_script(path='./stealth.min.js')
             page = await browser.new_page()
@@ -162,7 +201,6 @@ async def main():
             'fs_user2': config['fs_user2'],
             'fs_user2_psw': config['fs_user2_psw']
         }
-        # Add more auxiliary users as needed
     ]
 
     tasks = []
