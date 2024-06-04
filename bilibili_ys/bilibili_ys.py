@@ -66,8 +66,6 @@ async def open_browser_fans(userobj):
             await page.goto(zb_zbj_url)
             await page.wait_for_timeout(2000)
 
-
-
             #等待到第二天发弹幕6条，牛娃牛蛙1个
             while True:
 
