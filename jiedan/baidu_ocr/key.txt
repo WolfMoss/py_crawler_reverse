@@ -1,0 +1,5 @@
+百度apikey：BC2QycCBuRm0F4hef8u3CxId
+
+secretkey：Yf1D0MQztWv04QrkW6oXGP5Kg542oGaY
+
+百度模板ID：0f3a3129abf349d6f5f9bbf6eeedf231

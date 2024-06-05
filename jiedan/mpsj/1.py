@@ -4,16 +4,17 @@ import time
 import os
 
 current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-if current_time > "2024-06-05 17:30":
-    #结束整个程序
+if current_time > "2024-06-06 12:00":
+    # 结束整个程序
     os._exit(0)
-
 
 # 初始化Pygame
 pygame.init()
 
-# 定义屏幕尺寸
+# 定义屏幕尺寸和画板尺寸
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+DRAWING_AREA_WIDTH, DRAWING_AREA_HEIGHT = 600, 400
+DRAWING_AREA_POS = (100, 100)
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("密铺设计游戏")
 
@@ -24,6 +25,7 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
+DRAWING_AREA_COLOR = (200, 200, 200)
 
 # 形状类定义
 class Shape:
@@ -54,12 +56,25 @@ class Shape:
 
     def move(self, dx, dy):
         self.vertices = [(x + dx, y + dy) for x, y in self.vertices]
+        if not self.is_inside_drawing_area():
+            self.vertices = [(x - dx, y - dy) for x, y in self.vertices]
 
     def rotate(self, angle):
         self.angle += angle
+        if not self.is_inside_drawing_area():
+            self.angle -= angle
 
     def is_point_inside(self, point):
         return pygame.draw.polygon(screen, self.color, self.vertices).collidepoint(point)
+
+    def is_inside_drawing_area(self):
+        rotated_vertices = self.get_rotated_vertices()
+        min_x = min(v[0] for v in rotated_vertices)
+        max_x = max(v[0] for v in rotated_vertices)
+        min_y = min(v[1] for v in rotated_vertices)
+        max_y = max(v[1] for v in rotated_vertices)
+        return (DRAWING_AREA_POS[0] <= min_x <= max_x <= DRAWING_AREA_POS[0] + DRAWING_AREA_WIDTH and
+                DRAWING_AREA_POS[1] <= min_y <= max_y <= DRAWING_AREA_POS[1] + DRAWING_AREA_HEIGHT)
 
 def create_regular_polygon(sides, radius, position):
     angle = math.pi * 2 / sides
@@ -72,10 +87,10 @@ def create_regular_polygon(sides, radius, position):
 
 # 创建形状列表
 shapes = [
-    Shape(create_regular_polygon(3, 50, (100, 100)), RED),
-    Shape(create_regular_polygon(4, 50, (200, 100)), GREEN),
-    Shape(create_regular_polygon(5, 50, (300, 100)), BLUE),
-    Shape(create_regular_polygon(6, 50, (400, 100)), BLACK),
+    Shape(create_regular_polygon(3, 50, (150, 150)), RED),
+    Shape(create_regular_polygon(4, 50, (250, 150)), GREEN),
+    Shape(create_regular_polygon(5, 50, (350, 150)), BLUE),
+    Shape(create_regular_polygon(6, 50, (450, 150)), BLACK),
 ]
 
 # 游戏主循环
@@ -106,12 +121,8 @@ while running:
                 selected_shape = None
 
         elif event.type == pygame.KEYDOWN:
-            print(event.key)
-            print(pygame.K_r)
-            print(selected_shape)
             if event.key == pygame.K_r and selected_shape:
-                print("R")
-                selected_shape.rotate(math.pi / 12)
+                selected_shape.rotate(math.pi / 24)
             elif event.key == pygame.K_1:  # '1'键新增正三角形
                 shapes.append(Shape(create_regular_polygon(3, 50, pygame.mouse.get_pos()), RED))
             elif event.key == pygame.K_2:  # '2'键新增正方形
@@ -127,6 +138,7 @@ while running:
         selected_shape.move(mouse_x - cx, mouse_y - cy)
 
     screen.fill(WHITE)  # 清屏
+    pygame.draw.rect(screen, DRAWING_AREA_COLOR, (DRAWING_AREA_POS[0], DRAWING_AREA_POS[1], DRAWING_AREA_WIDTH, DRAWING_AREA_HEIGHT))
     for shape in shapes:
         shape.draw(screen)
 
