@@ -90,9 +90,11 @@ for file in pdf_files:
     pdfjson = main(file)
     excel_line_obj = {}
     excel_line_obj['户名']=findjsonkey(pdfjson, '户名')
-    excel_line_obj['贷款金额'] = findjsonkey(pdfjson, '贷款金额').replace(',', '').replace('，', '').replace('.', '')[:-2]
+    dkje = findjsonkey(pdfjson, '贷款金额').replace(',', '').replace('，', '').replace('.', '')
+    excel_line_obj['贷款金额'] = int(dkje[:-2]+ '.' + dkje[-2:])/10000
     excel_line_obj['流水号'] = findjsonkey(pdfjson, '额度项下提款流水号')
-    excel_line_obj['发生额本金'] = findjsonkey(pdfjson, '额度项下提款本金').replace(',', '').replace('，', '').replace('.', '')[:-2]
+    ebj = findjsonkey(pdfjson, '额度项下提款本金').replace(',', '').replace('，', '').replace('.', '')
+    excel_line_obj['发生额本金'] = int(ebj[:-2]+ '.' + ebj[-2:])/10000
     excel_line_obj['交易日期'] = findjsonkey(pdfjson, '额度项下提款交易日期')
 
     excel_json.append(excel_line_obj)
