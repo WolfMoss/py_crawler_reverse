@@ -21,6 +21,7 @@ print(AJ.VerS())
 with open('config.json', 'r') as f:
     config = json.load(f)
 
+leidianindex = 1
 # 预加载所有需要找图的模板图+++++++++++++++++++++++++++++
 h_pai = '1.PNG'
 h_pai_template = cv2.imread(h_pai, 0)
@@ -136,9 +137,16 @@ class Dnconsole:
     # 获取模拟器列表
     @staticmethod
     def get_list():
-        cmd = os.popen(Dnconsole.console + 'list2')
-        text = cmd.read()
-        cmd.close()
+        #cmd = os.popen(Dnconsole.console + 'list2')
+
+        with os.popen(Dnconsole.console + 'list2') as fp:
+            bf = fp._stream.buffer.read()
+        try:
+            text = bf.decode().strip()
+        except UnicodeDecodeError:
+            text = bf.decode('gbk').strip()
+
+        #cmd.close()
         info = text.split('\n')
         result = list()
         for line in info:
@@ -433,21 +441,39 @@ class Dnconsole:
             return UserInfo()
         return usr
 
+
+
+
 # Dnconsole.launch(1)
 # time.sleep(2)
 print(Dnconsole.list_running()[0])
 Hwnd1 = (str(Dnconsole.list_running()[0])).split('bind:')[1].split(' ')[0]
 #十六进制转十进制
 Hwnd = int(Hwnd1, 16)
-print(Hwnd)
+print('LDHwnd===',Hwnd)
 
-Dnconsole.invokeapp(1,"com.eg.android.AlipayGphone")
+Dnconsole.invokeapp(leidianindex,"com.eg.android.AlipayGphone")
 time.sleep(2)
 
 AJ.KQHouTai(Hwnd, 'GDI', 'DX', 'DX', 'LAA|LAM', 3)
 
 
-pots = [(106,210),(280,210),(455,210),(106,380)]
+pots = [
+    {'zb':(106,210),
+     'tongzhi':0
+     },
+    {'zb':(280,210),
+     'tongzhi':0
+     },
+    {'zb':(455,210),
+     'tongzhi':0
+     },
+    {'zb':(106,380),
+     'tongzhi':0
+     }
+]
+
+
 for pot in pots:
     #扫一扫
     AJ.MoveTo(71, 170)
@@ -458,19 +484,28 @@ for pot in pots:
     AJ.LeftClick()
     time.sleep(0.5)
 
-    #根据类名TrayNoticeWindow获取句柄
+    # 根据类名TrayNoticeWindow获取句柄
+    TrayNoticeHwnd = AJ.FindWindow(0, "", 0, "TrayNoticeWindow", "", 0, 0)
+    print('TrayNoticeHwnd===', TrayNoticeHwnd)
+    AJ.SetWindowState(TrayNoticeHwnd, 0)
 
     #选择二维码
-    AJ.MoveTo(pot[0], pot[1])
+    AJ.MoveTo(pot['zb'][0], pot['zb'][1])
     AJ.LeftClick()
     time.sleep(3)
 
 
     #判断是否404
-    print(AJ.ScreenShot(199, 713, 399, 761, png2, 1, 0, 0, 0, 1, 1))
+    print('截取===',AJ.ScreenShot(199, 713, 399, 761, png2, 1, 0, 0, 0, 1, 1))
     png2_template = cv2.imread(png2, 0)
     ploc = find_image(h_pai_template,png2_template)
-    print(ploc)
+    if ploc:
+        pot['tongzhi']=0
+    else:
+        if pot['tongzhi']==0:
+            pot['tongzhi']=1
+            #发通知
+
 
     #返回主页
     AJ.MoveTo(34, 76)

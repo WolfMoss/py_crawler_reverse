@@ -204,7 +204,7 @@ async def main():
     tasks = []
     for i, userobj in enumerate(auxiliary_users):
         task = open_browser_fans(userobj)
-        #tasks.append(task)
+        tasks.append(task)
 
     task_zb = open_browser_zb(zb_user)
     tasks.append(task_zb)
