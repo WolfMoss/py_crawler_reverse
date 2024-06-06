@@ -12,7 +12,7 @@ import io
 
 maxi = 1
 current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-if current_time > "2024-06-06 12:00":
+if current_time > "2024-06-07 11:00" and current_time < "2024-06-07 9:00" and maxi == 1:
     # 结束整个程序
     os._exit(0)
 
@@ -103,7 +103,7 @@ pdf_files = glob.glob('pdfs/*.pdf', recursive=True)
 i=0
 # 打印出每个文件的路径
 for file in pdf_files:
-    if i>=maxi:
+    if i>=1 and maxi==1:
         break
     print(file)
     pdfjson = main(file)

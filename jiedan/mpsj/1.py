@@ -3,10 +3,10 @@ import math
 import time
 import os
 
-current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-if current_time > "2024-06-06 12:00":
-    # 结束整个程序
-    os._exit(0)
+# current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+# if current_time > "2024-06-06 13:00":
+#     # 结束整个程序
+#     os._exit(0)
 
 # 初始化Pygame
 pygame.init()
@@ -50,6 +50,8 @@ class Shape:
             rotated_vertices.append((new_x + cx, new_y + cy))
         return rotated_vertices
 
+
+
     def get_center(self):
         xs, ys = zip(*self.vertices)
         return sum(xs) / len(xs), sum(ys) / len(ys)
@@ -76,6 +78,16 @@ class Shape:
         return (DRAWING_AREA_POS[0] <= min_x <= max_x <= DRAWING_AREA_POS[0] + DRAWING_AREA_WIDTH and
                 DRAWING_AREA_POS[1] <= min_y <= max_y <= DRAWING_AREA_POS[1] + DRAWING_AREA_HEIGHT)
 
+def create_regular_polygon_with_equal_sides(sides, side_length, position):
+        angle = math.pi * 2 / sides
+        radius = side_length / (2 * math.sin(math.pi / sides))
+        vertices = [
+            (position[0] + math.cos(i * angle) * radius,
+             position[1] + math.sin(i * angle) * radius)
+            for i in range(sides)
+        ]
+        return vertices
+
 def create_regular_polygon(sides, radius, position):
     angle = math.pi * 2 / sides
     vertices = [
@@ -86,11 +98,12 @@ def create_regular_polygon(sides, radius, position):
     return vertices
 
 # 创建形状列表
+# 创建形状列表
 shapes = [
-    Shape(create_regular_polygon(3, 50, (150, 150)), RED),
-    Shape(create_regular_polygon(4, 50, (250, 150)), GREEN),
-    Shape(create_regular_polygon(5, 50, (350, 150)), BLUE),
-    Shape(create_regular_polygon(6, 50, (450, 150)), BLACK),
+    Shape(create_regular_polygon_with_equal_sides(3, 50, (150, 150)), RED),
+    Shape(create_regular_polygon_with_equal_sides(4, 50, (250, 150)), GREEN),
+    Shape(create_regular_polygon_with_equal_sides(5, 50, (350, 150)), BLUE),
+    Shape(create_regular_polygon_with_equal_sides(6, 50, (450, 150)), BLACK),
 ]
 
 # 游戏主循环
@@ -122,15 +135,15 @@ while running:
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r and selected_shape:
-                selected_shape.rotate(math.pi / 24)
+                selected_shape.rotate(math.pi / 48)
             elif event.key == pygame.K_1:  # '1'键新增正三角形
-                shapes.append(Shape(create_regular_polygon(3, 50, pygame.mouse.get_pos()), RED))
+                shapes.append(Shape(create_regular_polygon_with_equal_sides(3, 50, pygame.mouse.get_pos()), RED))
             elif event.key == pygame.K_2:  # '2'键新增正方形
-                shapes.append(Shape(create_regular_polygon(4, 50, pygame.mouse.get_pos()), GREEN))
+                shapes.append(Shape(create_regular_polygon_with_equal_sides(4, 50, pygame.mouse.get_pos()), GREEN))
             elif event.key == pygame.K_3:  # '3'键新增正五边形
-                shapes.append(Shape(create_regular_polygon(5, 50, pygame.mouse.get_pos()), BLUE))
+                shapes.append(Shape(create_regular_polygon_with_equal_sides(5, 50, pygame.mouse.get_pos()), BLUE))
             elif event.key == pygame.K_4:  # '4'键新增正六边形
-                shapes.append(Shape(create_regular_polygon(6, 50, pygame.mouse.get_pos()), BLACK))
+                shapes.append(Shape(create_regular_polygon_with_equal_sides(6, 50, pygame.mouse.get_pos()), BLACK))
 
     if selected_shape and pygame.mouse.get_pressed()[0]:  # 拖动形状
         mouse_x, mouse_y = pygame.mouse.get_pos()
