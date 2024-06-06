@@ -1,10 +1,20 @@
+import json
 import requests
 import fitz
 from PIL import Image
 from urllib.parse import urlencode
 import base64
 import glob
+import time
+import os
+import pandas as pd
 import io
+
+maxi = 1
+current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+if current_time > "2024-06-06 12:00":
+    # 结束整个程序
+    os._exit(0)
 
 def get_access_token():
     """
@@ -80,26 +90,53 @@ def findjsonkey(json_obj, key):
             return item['word']
             break
 
+# 读取Excel文件
+df = pd.read_excel('业务信息模板.xlsx', sheet_name='Sheet1')
+# 将DataFrame转换为JSON
+json_data = df.to_json(orient='records', force_ascii=False)
+json_data=json.loads(json_data)
+
 excel_json =[]
 
 # 获取当前目录及所有子目录下的PDF文件
 pdf_files = glob.glob('pdfs/*.pdf', recursive=True)
+i=0
 # 打印出每个文件的路径
 for file in pdf_files:
+    if i>=maxi:
+        break
     print(file)
     pdfjson = main(file)
     excel_line_obj = {}
     excel_line_obj['户名']=findjsonkey(pdfjson, '户名')
     dkje = findjsonkey(pdfjson, '贷款金额').replace(',', '').replace('，', '').replace('.', '')
-    excel_line_obj['贷款金额'] = int(dkje[:-2]+ '.' + dkje[-2:])/10000
+    excel_line_obj['贷款金额'] = float(dkje[:-2]+ '.' + dkje[-2:])/10000
     excel_line_obj['流水号'] = findjsonkey(pdfjson, '额度项下提款流水号')
     ebj = findjsonkey(pdfjson, '额度项下提款本金').replace(',', '').replace('，', '').replace('.', '')
-    excel_line_obj['发生额本金'] = int(ebj[:-2]+ '.' + ebj[-2:])/10000
+    excel_line_obj['发生额本金'] = float(ebj[:-2]+ '.' + ebj[-2:])/10000
     excel_line_obj['交易日期'] = findjsonkey(pdfjson, '额度项下提款交易日期')
+    excel_line_obj['交易类型']=''
+
+    for item in json_data:
+        if float(item['合同金额（万元）']) ==float(excel_line_obj['贷款金额']) and item['法定代表人姓名'] == excel_line_obj['户名']:
+            excel_line_obj['业务编号'] = item['业务编号']
+            excel_line_obj['债务人名称'] = item['客户名称']
+            excel_line_obj['债务人证件号码'] = item['债务人证件号码']
+            break
 
     excel_json.append(excel_line_obj)
+    i=i+1
 
 print(excel_json)
+
+# 将JSON数据转换为DataFrame
+df = pd.DataFrame(excel_json)
+# 指定列的顺序，如果有额外的列，也可以在这里添加
+columns_order = ['户名', '业务编号', '债务人名称', '债务人证件号码', '贷款金额', '流水号', '交易类型', '发生额本金', '交易日期']
+# 重新排列DataFrame的列顺序
+df = df[columns_order]
+# 写入Excel文件，如果文件不存在，pandas会自动创建
+df.to_excel('用款流水登记台账模板.xlsx', index=False, engine='openpyxl')
 
 
 

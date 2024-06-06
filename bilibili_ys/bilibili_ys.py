@@ -67,7 +67,7 @@ async def open_browser_fans(userobj):
             await page.wait_for_timeout(2000)
 
             #等待到第二天发弹幕6条，牛娃牛蛙1个
-            while True:
+            while False:
 
 
                 print(username,'开始获取当前时间')
@@ -144,7 +144,7 @@ async def open_browser_zb(userobj):
 
             await page.goto('https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=7f920185')
             #循环判断当前时间，是否超过0:59:56秒，如果超过则点击按钮，如果超过1:00:05秒，则退出循环
-            while True:
+            while False:
                 print(username,'开始获取当前时间')
                 # 获取当前时间
                 current_time_str  = await page.evaluate("new Date().toLocaleTimeString()")
@@ -165,11 +165,11 @@ async def open_browser_zb(userobj):
                     await asyncio.sleep(1)
 
 
-            # 执行 JavaScript 代码
-            await page.evaluate("""
-                var button = document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div");
-                setInterval(function() {button.click();},100);
-            """)
+            # # 执行 JavaScript 代码
+            # await page.evaluate("""
+            #     var button = document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div");
+            #     setInterval(function() {button.click();},100);
+            # """)
 
             try:
                 # 保持浏览器和页面打开状态
@@ -204,7 +204,7 @@ async def main():
     tasks = []
     for i, userobj in enumerate(auxiliary_users):
         task = open_browser_fans(userobj)
-        tasks.append(task)
+        #tasks.append(task)
 
     task_zb = open_browser_zb(zb_user)
     tasks.append(task_zb)
