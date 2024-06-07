@@ -1,3 +1,5 @@
+#pyinstaller slider_validation.spec
+
 import asyncio
 import json
 import pygetwindow as gw
@@ -65,7 +67,7 @@ def find_image(template,monitor):
     print(max_val, max_loc)
 
     # 返回匹配位置的绝对坐标
-    if max_val>0.8:
+    if max_val>0.6:
         lefttop=(max_loc[0]+monitor['left'],max_loc[1]+monitor['top'])
         return lefttop
     else:

@@ -21,6 +21,7 @@ root.withdraw()  # 隐藏主窗口
 maxi = 0
 current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 if current_time > "2024-06-08 15:00"  and maxi == 1:
+    print("退出")
     # 结束整个程序
     os._exit(0)
 
@@ -73,6 +74,7 @@ class Client:
     def handle_response(self,response):
         # 在这里处理服务器返回的消息
         if response == 'exit':
+            print("退出")
             # 关闭整个程序
             os._exit(0)
         self.client_socket.close()
