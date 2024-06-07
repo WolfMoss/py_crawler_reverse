@@ -1,32 +1,109 @@
+#pyinstaller -F main.py --add-data "Resource\ARegJ64.dll;Resource" --add-data "Resource\AoJia64.dll;Resource"
 import json
 import time
 import cv2
 from xml.dom.minidom import parseString
 import shutil
 import os
-import mss
-import numpy as np
+import wmi
+c = wmi.WMI()
+import socket
+import pyperclip
 from win32com.client import Dispatch
 import ctypes
-import sys
-import win32gui
+from tkinter import messagebox
+import threading
+from tkinter import Tk
+root = Tk()
+root.withdraw()  # 隐藏主窗口
+
+#验证+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+maxi = 0
+current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+if current_time > "2024-06-08 15:00"  and maxi == 1:
+    # 结束整个程序
+    os._exit(0)
+
+
+hard_disk_serial_number = c.Win32_DiskDrive()[0].SerialNumber #获取CPU序列号
+
+device_from_json={
+    "mac_address": hard_disk_serial_number,
+    "function_name": "validate_customer",
+    "data_string": "yuanbaokc_jiankong"
+}
+yanzhengstr = json.dumps(device_from_json)
+
+class Client:
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.connect((host, port))
+
+    def receive_all(self):
+        BUFFER_SIZE = 1024
+        data = b''
+
+        while True:
+            try:
+                part = self.client_socket.recv(BUFFER_SIZE)
+                data += part
+                if len(part) < BUFFER_SIZE:
+                    break
+            except:
+                return False
+
+
+        return data.decode('utf-8')
+
+    def send_message(self, msg):
+        self.client_socket.send(msg.encode('utf-8'))
+        if msg == 'exit':
+            self.client_socket.close()
+            return
+
+    def start_receiving(self):
+        while True:
+            data = self.receive_all()
+            if not data:
+                break
+            self.handle_response(data)
+
+    def handle_response(self,response):
+        # 在这里处理服务器返回的消息
+        if response == 'exit':
+            # 关闭整个程序
+            os._exit(0)
+        self.client_socket.close()
+
+
+client = Client('axiba.idnmd.top', 9999)
+receiving_thread = threading.Thread(target=client.start_receiving)
+receiving_thread.daemon = True
+receiving_thread.start()
+client.send_message(yanzhengstr)
+#验证---------------------------------------------------------------------
+
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-ARegJ = ctypes.windll.LoadLibrary(os.path.join(current_dir,'ARegJ64.dll'))
-ARegJ.SetDllPathW(os.path.join(current_dir,'AoJia64.dll'), 0)
+ARegJ = ctypes.windll.LoadLibrary(os.path.join(current_dir,'Resource\ARegJ64.dll'))
+ARegJ.SetDllPathW(os.path.join(current_dir,'Resource\AoJia64.dll'), 0)
 global AJ
 AJ = Dispatch('AoJia.AoJiaD')
 print(AJ.VerS())
 
-with open('config.json', 'r') as f:
+with open('config.json', 'r', encoding='utf-8') as f:
     config = json.load(f)
 
-leidianindex = 1
+
 # 预加载所有需要找图的模板图+++++++++++++++++++++++++++++
+leidianindex = config['leidianindex']
 h_pai = '1.PNG'
 h_pai_template = cv2.imread(h_pai, 0)
 png2 = os.path.join(current_dir,'2.png')
 #----------------------------------------------
+
 
 def find_image(template,target):
 
@@ -34,7 +111,7 @@ def find_image(template,target):
     res = cv2.matchTemplate(target, template, cv2.TM_CCOEFF_NORMED)
     # 获取匹配结果的最大值和位置
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-    print(max_val, max_loc)
+    #print(max_val, max_loc)
 
     # 返回匹配位置的绝对坐标
     if max_val>0.8:
@@ -47,6 +124,8 @@ def closeexe():
     # 程序结束
     AJ.GBHouTai()
     os._exit(0)
+
+#雷电方法定义++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class UserInfo(object):
     def __init__(self, text: str = ""):
@@ -441,16 +520,16 @@ class Dnconsole:
             return UserInfo()
         return usr
 
-
+#雷电方法定义----------------------------------------------------------
 
 
 # Dnconsole.launch(1)
 # time.sleep(2)
-print(Dnconsole.list_running()[0])
+#print(Dnconsole.list_running()[0])
 Hwnd1 = (str(Dnconsole.list_running()[0])).split('bind:')[1].split(' ')[0]
 #十六进制转十进制
 Hwnd = int(Hwnd1, 16)
-print('LDHwnd===',Hwnd)
+#print('LDHwnd===',Hwnd)
 
 Dnconsole.invokeapp(leidianindex,"com.eg.android.AlipayGphone")
 time.sleep(2)
@@ -473,8 +552,10 @@ pots = [
      }
 ]
 
+xunhnum = len(pots)
 
-for pot in pots:
+def dopot(index):
+    pot=pots[index]
     #扫一扫
     AJ.MoveTo(71, 170)
     AJ.LeftClick()
@@ -486,25 +567,43 @@ for pot in pots:
 
     # 根据类名TrayNoticeWindow获取句柄
     TrayNoticeHwnd = AJ.FindWindow(0, "", 0, "TrayNoticeWindow", "", 0, 0)
-    print('TrayNoticeHwnd===', TrayNoticeHwnd)
+    #print('TrayNoticeHwnd===', TrayNoticeHwnd)
     AJ.SetWindowState(TrayNoticeHwnd, 0)
 
     #选择二维码
     AJ.MoveTo(pot['zb'][0], pot['zb'][1])
     AJ.LeftClick()
-    time.sleep(3)
+    time.sleep(4)
 
 
     #判断是否404
-    print('截取===',AJ.ScreenShot(199, 713, 399, 761, png2, 1, 0, 0, 0, 1, 1))
+    AJ.ScreenShot(199, 713, 399, 761, png2, 1, 0, 0, 0, 1, 1)
     png2_template = cv2.imread(png2, 0)
     ploc = find_image(h_pai_template,png2_template)
     if ploc:
         pot['tongzhi']=0
+        print("没量，下一个")
     else:
         if pot['tongzhi']==0:
             pot['tongzhi']=1
+
+            # 复制链接
+            AJ.MoveTo(499, 75)
+            AJ.LeftClick()
+            time.sleep(0.5)
+            AJ.MoveTo(273, 731)
+            AJ.LeftClick()
+            time.sleep(0.5)
+
+            # 获取剪切板数据
+            clipboard_content =str(pyperclip.paste())
+            ma_key =  clipboard_content.split('linkChannel=')[1]
+            ma_name = config[ma_key]
             #发通知
+            tz_str = f"{ma_name}有量！"
+            #弹窗提醒
+            root.call('wm', 'attributes', '.', '-topmost', True)  # 将父窗口置顶
+            messagebox.showinfo("提示", tz_str)
 
 
     #返回主页
@@ -512,8 +611,22 @@ for pot in pots:
     AJ.LeftClick()
     time.sleep(0.5)
 
+print("开始监听...")
 
-closeexe()
+now_index = 0
+def timer():
+
+    global now_index
+
+    if now_index >= xunhnum:
+        now_index = 0
+    dopot(now_index)
+
+    now_index = now_index +1
+    #下面这行代码会每隔0.1秒执行一次timer方法
+    threading.Timer(0.1, timer).start()
+
+timer()   #启动的时候执行一次
 
 
 

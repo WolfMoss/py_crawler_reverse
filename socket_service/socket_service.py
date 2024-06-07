@@ -12,15 +12,13 @@ def from_json(json_str):
     return NetworkDevice.from_dict(data)
 
 class NetworkDevice:
-    def __init__(self, ip_address, mac_address, function_name, data_string):
-        self.ip_address = ip_address
+    def __init__(self, mac_address, function_name, data_string):
         self.mac_address = mac_address
         self.function_name = function_name
         self.data_string = data_string
 
     def to_dict(self):
         return {
-            "ip_address": self.ip_address,
             "mac_address": self.mac_address,
             "function_name": self.function_name,
             "data_string": self.data_string
@@ -29,13 +27,12 @@ class NetworkDevice:
     @classmethod
     def from_dict(cls, data):
         return cls(
-            data["ip_address"],
             data["mac_address"],
             data["function_name"],
             data["data_string"]
         )
 # 创建类实例++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-device = NetworkDevice("192.168.1.100", "00:1A:2B:3C:4D:5E", "router", "Data String 1")
+device = NetworkDevice("00:1A:2B:3C:4D:5E", "router", "Data String 1")
 # 类实例转换为 JSON 字符串
 json_str = to_json(device)
 # JSON 字符串转换回类实例
@@ -97,7 +94,6 @@ def start_server():
 def get_msg_seng(data,addr):
     device_from_json = from_json(data)
     function_name=device_from_json.function_name
-    device_from_json.ip_address =addr
     # 根据函数名调用不同方法
     if function_name in FUNCTION_MAP:
         function = FUNCTION_MAP[function_name]
@@ -108,20 +104,25 @@ def get_msg_seng(data,addr):
 #服务启动------------------------------------------------------------------------
 
 #业务方法+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def function_a(device):
-    print(f"Executing Function A for device with IP {device.ip_address}")
-    return "Function A executed successfully"
+def validate_customer(device):
+    with open('config.json', 'r', encoding='utf-8') as f:
+        config = json.load(f)
+        data_string=device.data_string
+        if data_string in config['Customers']:
+            return "1"
+        else:
+            return "exit"
 
 def function_b(device):
-    print(f"Executing Function B for device with IP {device.ip_address}")
+    print(f"Executing Function B for device with IP {device.mac_address}")
     return "Function B executed successfully"
 
 def function_c(device):
-    print(f"Executing Function C for device with IP {device.ip_address}")
+    print(f"Executing Function C for device with IP {device.mac_address}")
     return "Function C executed successfully"
 
 FUNCTION_MAP = {
-    "function_a": function_a,
+    "validate_customer": validate_customer,
     "function_b": function_b,
     "function_c": function_c
 }
