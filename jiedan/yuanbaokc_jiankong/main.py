@@ -12,6 +12,7 @@ import pyperclip
 from win32com.client import Dispatch
 import ctypes
 from tkinter import messagebox
+import requests
 import threading
 from tkinter import Tk
 root = Tk()
@@ -105,6 +106,34 @@ h_pai = '1.PNG'
 h_pai_template = cv2.imread(h_pai, 0)
 png2 = os.path.join(current_dir,'2.png')
 #----------------------------------------------
+
+def send_notification(tz_str):
+    """
+    发送Server酱通知
+    :param tz_str: 通知的标题内容
+    """
+    # Server酱的SCKEY，这里需要替换为您自己的SCKEY
+    SCKEY = "SCT249952TXIFKYY5Hl0Z9PAeHzl3Aht35"
+    api_url = f"https://sctapi.ftqq.com/{SCKEY}.send"
+
+    # 准备POST数据
+    data = {
+        "title": tz_str,
+        # 如果需要，您也可以添加"desp"字段来描述通知的详细内容
+        # "desp": "这里是通知的详细描述",
+    }
+
+    try:
+        response = requests.post(api_url, data=data)
+        response_json = response.json()
+
+        if response_json["code"] == 0:
+            print("通知发送成功！")
+        else:
+            print(f"通知发送失败，错误信息：{response_json['message']}")
+    except Exception as e:
+        print(f"发送通知时发生错误：{e}")
+
 
 
 def find_image(template,target):
@@ -604,8 +633,13 @@ def dopot(index):
             #发通知
             tz_str = f"{ma_name}有量！"
             #弹窗提醒
-            root.call('wm', 'attributes', '.', '-topmost', True)  # 将父窗口置顶
-            messagebox.showinfo("提示", tz_str)
+            # root.call('wm', 'attributes', '.', '-topmost', True)  # 将父窗口置顶
+            # messagebox.showinfo("提示", tz_str)
+
+            #URL编码
+
+            # 示例调用函数
+            send_notification(tz_str)
 
 
     #返回主页
