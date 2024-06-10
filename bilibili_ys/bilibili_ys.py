@@ -4,6 +4,21 @@ from datetime import datetime
 import traceback
 from playwright.async_api import async_playwright
 
+urls = {
+1: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=eacf172b",
+5: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=275802a2",
+7: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=69a357b6",
+10: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=8c8ea2b7",
+15: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=cb7354c5",
+17: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=e997e4eb",
+20: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=08c53ae6",
+25: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=2e52a015",
+27: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=483d7b8d",
+30: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=8c238f88",
+35: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=cc98f9f2",
+37: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=e8726b6a",
+40: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=03acb380"
+}
 #随机弹幕
 def random_danmu(i):
     danmu_content = [
@@ -20,6 +35,13 @@ def random_danmu(i):
     ]
 
     return danmu_content[i]
+
+def calculate_day_difference(start_date_str):
+    start_date = datetime.strptime(start_date_str, '%Y%m%d')
+    current_date = datetime.now()  # 获取当前日期和时间
+    current_date_str = current_date.strftime('%Y%m%d')  # 格式化当前日期为字符串
+    current_date = datetime.strptime(current_date_str, '%Y%m%d')  # 再次转换以去除时间部分
+    return (current_date - start_date).days + 1
 
 async def open_browser_fans(userobj):
     try:
@@ -43,7 +65,9 @@ async def open_browser_fans(userobj):
             )
             await browser.add_init_script(path='./stealth.min.js')
             page = await browser.new_page()
+
             await page.goto('https://space.bilibili.com/')
+
 
             dengdai = True
             shurumima = False
@@ -51,7 +75,7 @@ async def open_browser_fans(userobj):
                 await page.wait_for_load_state('networkidle')
                 login_button = await page.query_selector_all('input[placeholder="请输入账号"]')
                 if login_button:
-                    print(username,"尚未登录")
+                    #print(username,"尚未登录")
                     if not shurumima:
                         await page.type('input[placeholder="请输入账号"]', username)
                         await page.type('input[placeholder="请输入密码"]', psw)
@@ -65,16 +89,21 @@ async def open_browser_fans(userobj):
             #跳转到直播间
             await page.goto(zb_zbj_url)
             await page.wait_for_timeout(2000)
+            # 应用CSS变换进行缩放
+            await page.evaluate("""() => {
+                document.body.style.transform = 'scale(0.7)';
+                document.body.style.transformOrigin = 'top left';
+            }""")
 
             #等待到第二天发弹幕6条，牛娃牛蛙1个
             while False:
 
 
-                print(username,'开始获取当前时间')
+                #print(username,'开始获取当前时间')
                 # 获取当前时间
                 current_time_str  = await page.evaluate("new Date().toLocaleTimeString()")
                 current_time = datetime.strptime(current_time_str, '%H:%M:%S').time()
-                if current_time >datetime.strptime('0:01:00', '%H:%M:%S').time() and current_time < datetime.strptime('1:00:00', '%H:%M:%S').time():
+                if current_time >datetime.strptime('0:05:00', '%H:%M:%S').time() and current_time < datetime.strptime('1:00:00', '%H:%M:%S').time():
                     print(username,'到第二天发弹幕6条，牛娃牛蛙1个')
 
                     # 循环6次
@@ -122,6 +151,8 @@ async def open_browser_zb(userobj):
                 args=['--start-maximized',"--disable-blink-features=AutomationControlled"],viewport={"width": 1920, "height": 1080}, no_viewport=True
             )
             await browser.add_init_script(path='./stealth.min.js')
+            page0 = browser.pages[0]
+            await page0.goto('https://www.bilibili.com/blackboard/activity-h4oYj68f4J.html')
             page = await browser.new_page()
             await page.goto('https://space.bilibili.com/')
 
@@ -131,7 +162,7 @@ async def open_browser_zb(userobj):
                 await page.wait_for_load_state('networkidle')
                 login_button = await page.query_selector_all('input[placeholder="请输入账号"]')
                 if login_button:
-                    print(username,"尚未登录")
+                    #print(username,"尚未登录")
                     if not shurumima:
                         await page.type('input[placeholder="请输入账号"]', username)
                         await page.type('input[placeholder="请输入密码"]', userobj['zb_user_psw'])
@@ -142,23 +173,37 @@ async def open_browser_zb(userobj):
                     dengdai = False
             print(username,"登录成功")
 
-            await page.goto('https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=7f920185')
+
             #循环判断当前时间，是否超过0:59:56秒，如果超过则点击按钮，如果超过1:00:05秒，则退出循环
-            while False:
-                print(username,'开始获取当前时间')
+            while True:
+                #print(username,'开始获取当前时间')
                 # 获取当前时间
                 current_time_str  = await page.evaluate("new Date().toLocaleTimeString()")
                 current_time = datetime.strptime(current_time_str, '%H:%M:%S').time()
                 if current_time < datetime.strptime('2:00:00', '%H:%M:%S').time():
-                    clicktime = datetime.strptime('0:59:59', '%H:%M:%S').time()
-                    breaktime = datetime.strptime('1:00:02', '%H:%M:%S').time()
-                    # 判断当前时间是否超过0:59:56秒
-                    if current_time >= clicktime:
-                        # 点击按钮
-                        await page.click("#app > div > div.home-wrap.select-disable > section.tool-wrap > div")
-                        # 等待 1 秒
-                        await asyncio.sleep(0.1)
-                    if current_time >= breaktime:
+                    print("到第二天",current_time)
+                    #判断当前是第几天
+                    start_date_str = '20240605'  # 定义起始日期
+                    day_difference = calculate_day_difference(start_date_str)
+                    print('day_difference===',current_time,day_difference)
+                    if day_difference in urls:
+                        await page.goto(urls[day_difference])
+
+                        while True:
+                            clicktime = datetime.strptime('0:59:59', '%H:%M:%S').time()
+                            breaktime = datetime.strptime('1:00:02', '%H:%M:%S').time()
+                            # 判断当前时间是否超过0:59:56秒
+                            if current_time >= clicktime:
+                                print("时间到了，点击按钮",current_time)
+                                # 点击按钮
+                                await page.click("#app > div > div.home-wrap.select-disable > section.tool-wrap > div")
+                                # 等待 1 秒
+                                await asyncio.sleep(0.1)
+                            else:
+                                print("时间没到",current_time)
+                            if current_time >= breaktime:
+                                print("时间到了，退出循环",current_time)
+                                break
                         break
                 else:
                     print(username,'还没到第二天')

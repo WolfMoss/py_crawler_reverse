@@ -1,3 +1,15 @@
 {
-    "Customers": ["yuanbaokc_jiankong"]
+    "Customers": [{
+        "name": "yuanbaokc_jiankong",
+        "date": "2024-06-10 12:00",
+        "usenum":10
+    },{
+        "name": "baidu_ocr260",
+        "date": "2024-06-09 17:00",
+        "usenum":10
+    },{
+        "name": "baidu_ocr400",
+        "date": "2024-06-09 17:00",
+        "usenum":10
+    }]
 }

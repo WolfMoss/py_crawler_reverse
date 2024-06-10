@@ -5,16 +5,14 @@ from PIL import Image
 from urllib.parse import urlencode
 import base64
 import glob
-import time
-import os
+import yanzheng
 import pandas as pd
 import io
+import sys
+print(sys.path)
 
-maxi = 1
-current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-if current_time > "2024-06-07 11:00" and current_time < "2024-06-07 9:00" and maxi == 1:
-    # 结束整个程序
-    os._exit(0)
+yanzheng.method_name('baidu_ocr260')
+maxi=1
 
 def get_access_token():
     """
@@ -117,12 +115,18 @@ for file in pdf_files:
     excel_line_obj['交易日期'] = findjsonkey(pdfjson, '额度项下提款交易日期')
     excel_line_obj['交易类型']=''
 
+    findmb = False
     for item in json_data:
         if float(item['合同金额（万元）']) ==float(excel_line_obj['贷款金额']) and item['法定代表人姓名'] == excel_line_obj['户名']:
             excel_line_obj['业务编号'] = item['业务编号']
             excel_line_obj['债务人名称'] = item['客户名称']
             excel_line_obj['债务人证件号码'] = item['债务人证件号码']
+            findmb = True
             break
+    if not findmb:
+        excel_line_obj['业务编号'] = ""
+        excel_line_obj['债务人名称'] = ""
+        excel_line_obj['债务人证件号码'] = ""
 
     excel_json.append(excel_line_obj)
     i=i+1

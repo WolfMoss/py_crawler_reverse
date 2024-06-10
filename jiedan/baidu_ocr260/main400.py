@@ -6,15 +6,15 @@ from urllib.parse import urlencode
 import base64
 import glob
 import time
+import pandas as pd
+from io import BytesIO
 import os
+import yanzheng
 import pandas as pd
 import io
 
-maxi = 0
-current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-if current_time > "2024-06-07 11:00" and current_time < "2024-06-07 9:00" and maxi == 1:
-    # 结束整个程序
-    os._exit(0)
+yanzheng.method_name('baidu_ocr400')
+maxi=1
 
 def get_access_token():
     """
@@ -25,8 +25,8 @@ def get_access_token():
     params = {"grant_type": "client_credentials", "client_id": API_KEY, "client_secret": SECRET_KEY}
     return str(requests.post(url, params=params).json().get("access_token"))
 
-API_KEY = "BC2QycCBuRm0F4hef8u3CxId"
-SECRET_KEY = "Yf1D0MQztWv04QrkW6oXGP5Kg542oGaY"
+API_KEY = "SXZ6Ym9WTySuuNPjKmf1R7gb"
+SECRET_KEY = "lKNufVSBDn8hfwZm5poZB5kcdfpbI5OO"
 access_token = get_access_token()
 
 def convert_pdf_to_images(pdf_path):
@@ -56,7 +56,7 @@ def image_to_base64(image):
     img_str = base64.b64encode(buffered.getvalue()).decode()
     return img_str
 
-def main(pdfpath):
+def get_pdf_header(pdfpath):
     image = convert_pdf_to_images(pdfpath)
 
     image1 = resize_image(image)
@@ -67,9 +67,9 @@ def main(pdfpath):
     else:
         print("Encoded image is larger than 4MB.")
 
-    url = "https://aip.baidubce.com/rest/2.0/solution/v1/iocr/recognise?access_token=" + access_token
+    url = "https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic?access_token=" + access_token
 
-    payload = f'image={img_urlencoded}&templateSign=0f3a3129abf349d6f5f9bbf6eeedf231'
+    payload = f'image={img_urlencoded}&detect_direction=false&paragraph=false&probability=false'
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'application/json'
@@ -77,7 +77,26 @@ def main(pdfpath):
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    return response.json()
+    return response
+
+def get_pdf_rows(pdfpath):
+    # 读取PDF文件并编码为Base64字符串
+    with open(pdfpath, 'rb') as pdf_file:
+        pdf_data = pdf_file.read()
+        base64_pdf_str = base64.b64encode(pdf_data).decode('utf-8')
+        img_urlencoded = urlencode({'': base64_pdf_str})[1:]
+
+    url = "https://aip.baidubce.com/rest/2.0/ocr/v1/table?access_token=" + access_token
+
+    payload = f'pdf_file={img_urlencoded}&cell_contents=false&return_excel=true'
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    return response
 
 def findjsonkey(json_obj, key):
     # 遍历查找word_name为'户名'的word
@@ -89,41 +108,80 @@ def findjsonkey(json_obj, key):
 # 读取Excel文件
 df = pd.read_excel('业务信息模板.xlsx', sheet_name='Sheet1')
 # 将DataFrame转换为JSON
-json_data = df.to_json(orient='records', force_ascii=False)
-json_data=json.loads(json_data)
-
+json_data_mb = df.to_json(orient='records', force_ascii=False)
+json_data_mb=json.loads(json_data_mb)
 excel_json =[]
 
 # 获取当前目录及所有子目录下的PDF文件
-pdf_files = glob.glob('pdfs/*.pdf', recursive=True)
+pdf_files = glob.glob('pdfs400/*.pdf', recursive=True)
 i=0
 # 打印出每个文件的路径
 for file in pdf_files:
     if i>=1 and maxi==1:
         break
-    print(file)
-    pdfjson = main(file)
-    excel_line_obj = {}
-    excel_line_obj['户名']=findjsonkey(pdfjson, '户名')
-    dkje = findjsonkey(pdfjson, '贷款金额').replace(',', '').replace('，', '').replace('.', '')
-    excel_line_obj['贷款金额'] = float(dkje[:-2]+ '.' + dkje[-2:])/10000
-    excel_line_obj['流水号'] = findjsonkey(pdfjson, '额度项下提款流水号')
-    ebj = findjsonkey(pdfjson, '额度项下提款本金').replace(',', '').replace('，', '').replace('.', '')
-    excel_line_obj['发生额本金'] = float(ebj[:-2]+ '.' + ebj[-2:])/10000
-    excel_line_obj['交易日期'] = findjsonkey(pdfjson, '额度项下提款交易日期')
-    excel_line_obj['交易类型']=''
+    response=get_pdf_header(file)
+    responsetext = response.text
+    responsejson = response.json()
 
-    for item in json_data:
-        if float(item['合同金额（万元）']) ==float(excel_line_obj['贷款金额']) and item['法定代表人姓名'] == excel_line_obj['户名']:
-            excel_line_obj['业务编号'] = item['业务编号']
-            excel_line_obj['债务人名称'] = item['客户名称']
-            excel_line_obj['债务人证件号码'] = item['债务人证件号码']
-            break
+    hm = responsetext.split('户名：')[1].split('"')[0]
 
-    excel_json.append(excel_line_obj)
+    dkje = responsetext.split('贷款金额：')[1].split('"')[0].replace(',', '').replace('，', '').replace('.', '')
+    dkje = float(dkje[:-2]+ '.' + dkje[-2:])/10000
+
+    #  交易日期 交易类型 发生额本金 流水号
+    response_rows = get_pdf_rows(file)
+    response_rowstext = response_rows.text
+    response_rowsjson = response_rows.json()
+    excelbase64 = response_rowsjson['excel_file']
+
+    # 解码Base64字符串为二进制数据
+    excel_data = base64.b64decode(excelbase64)
+    # 使用BytesIO将二进制数据转换为文件对象
+    excel_file = BytesIO(excel_data)
+    # 读取Excel文件，从第三行开始
+    df = pd.read_excel(excel_file, skiprows=1, nrows=40)
+    # 重命名列
+    df.columns = ['序号', '交易日期', '交易类型', '发生额合计', '发生额本金', '发生额利息', '发生额罚息', '本金余额', '流水号']
+    # 将DataFrame转换为JSON
+    json_data = df.to_json(orient='records', force_ascii=False)
+    json_data = json.loads(json_data)
+
+    for row in json_data:
+        if not row['交易日期']:
+            continue
+        fsebj= row['发生额本金'].replace(',', '').replace('，', '').replace('.', '')
+        row['发生额本金'] = float(fsebj[:-2] + '.' + fsebj[-2:]) / 10000
+        if row['发生额本金']==0:
+            continue
+
+        excel_line_obj = {}
+        excel_line_obj['户名'] =hm
+        excel_line_obj['贷款金额'] =dkje
+        excel_line_obj['交易日期'] = row['交易日期']
+        excel_line_obj['交易类型'] = row['交易类型']
+        excel_line_obj['发生额本金'] = row['发生额本金']
+        excel_line_obj['流水号'] = row['流水号']
+
+
+
+
+        findmb = False
+        for item in json_data_mb:
+            if float(item['合同金额（万元）']) ==float(excel_line_obj['贷款金额']) and item['法定代表人姓名'] == excel_line_obj['户名']:
+                excel_line_obj['业务编号'] = item['业务编号']
+                excel_line_obj['债务人名称'] = item['客户名称']
+                excel_line_obj['债务人证件号码'] = item['债务人证件号码']
+                findmb = True
+                break
+
+        if not findmb:
+            excel_line_obj['业务编号'] = ""
+            excel_line_obj['债务人名称'] = ""
+            excel_line_obj['债务人证件号码'] =""
+
+        excel_json.append(excel_line_obj)
     i=i+1
 
-print(excel_json)
 
 # 将JSON数据转换为DataFrame
 df = pd.DataFrame(excel_json)

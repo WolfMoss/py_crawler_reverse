@@ -131,7 +131,7 @@ async def gpageaaaaa():
         browser = await p.chromium.launch(headless=False, args=['--start-maximized'])  # headless=False 便于调试
         gcontext = await browser.new_context(viewport={"width": 1920, "height": 1080}, no_viewport=True)
         stealth = os.path.join(script_dir, 'stealth.min.js')
-        gcontext.add_init_script(path=stealth)
+        await gcontext.add_init_script(path=stealth)
         gpage = await gcontext.new_page()
         await gpage.goto("https://95598.cn/osgweb/login")
         # 最小化窗口
@@ -172,7 +172,7 @@ async def capture_image_requests():
         browser = await p.chromium.connect_over_cdp("http://localhost:9222")
         context = browser.contexts[0]
         stealth = os.path.join(script_dir, 'stealth.min.js')
-        context.add_init_script(path=stealth)
+        await context.add_init_script(path=stealth)
         # # 获取所有页面
         # pages = context.pages
         # # 遍历每个页面并检查标题是否包含 "95598"

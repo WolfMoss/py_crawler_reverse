@@ -2,16 +2,10 @@
 
 
 a = Analysis(
-    ['slider_validation.py'],
+    ['main400.py'],
     pathex=[],
     binaries=[],
-    datas=[
-    ('stealth.min.js', '.'),
-    ('page.js', '.'),
-    ('dl.PNG', '.'),
-    ('hk.PNG', '.'),
-    (r'C:\Users\Administrator\AppData\Local\Programs\Python\Python310\Lib\site-packages\playwright\driver','playwright/driver')
-    ],
+    datas=[],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -28,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='slider_validation',
+    name='main400',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

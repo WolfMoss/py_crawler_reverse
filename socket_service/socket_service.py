@@ -1,7 +1,9 @@
 import json
 import socket
 import threading
+import time
 import traceback
+import pymysql
 
 #定义方法++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def to_json(obj):
@@ -108,10 +110,55 @@ def validate_customer(device):
     with open('config.json', 'r', encoding='utf-8') as f:
         config = json.load(f)
         data_string=device.data_string
-        if data_string in config['Customers']:
-            return "1"
-        else:
+
+
+
+        # 遍历 Customers 列表
+        incustomer = False
+        for customer in config["Customers"]:
+            if data_string in customer["name"]:
+                incustomer=True
+                outdate = customer["date"]
+                usenum = customer['usenum']
+                current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                if current_time > outdate:
+                    print("过期")
+                    return "exit"
+                else:
+                    print("未过期")
+
+                    db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306,
+                                         db='quant')
+
+                    cursor = db.cursor()
+                    cursor.execute(f"SELECT * FROM jiedan_key WHERE hard_disk_serial_number='{device.mac_address}' and func_name='{customer['name']}'")
+                    results = cursor.fetchall()
+                    if len(results) > 0:
+                        db.close()
+                        return "1"
+
+                    cursor.execute(
+                        f"SELECT * FROM jiedan_key WHERE func_name='{customer['name']}'")
+                    results = cursor.fetchall()
+                    if len(results)+1 > usenum:
+                        print("超出使用量限制")
+                        db.close()
+                        return "exit"
+
+                    cursor.execute(
+                        f"INSERT INTO jiedan_key (func_name, hard_disk_serial_number,is_used) VALUES ('{customer['name']}', '{device.mac_address}', 1)")
+
+                    # 提交事务
+                    db.commit()
+                    db.close()
+
+                    return "1"
+
+
+        if not incustomer :
+            print("客户不在列表")
             return "exit"
+
 
 def function_b(device):
     print(f"Executing Function B for device with IP {device.mac_address}")
