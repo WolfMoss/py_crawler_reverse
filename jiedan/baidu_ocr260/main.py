@@ -12,7 +12,7 @@ import sys
 print(sys.path)
 
 yanzheng.method_name('baidu_ocr260')
-maxi=1
+maxi=0
 
 def get_access_token():
     """
