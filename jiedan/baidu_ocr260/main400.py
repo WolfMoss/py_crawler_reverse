@@ -147,42 +147,53 @@ for file in pdf_files:
         response_rowsjson = response_rows.json()
         excelbase64 = response_rowsjson['excel_file']
 
-        # 解码Base64字符串为二进制数据
-        excel_data = base64.b64decode(excelbase64)
-        # 使用BytesIO将二进制数据转换为文件对象
-        excel_file = BytesIO(excel_data)
-        # 读取Excel文件，从第三行开始
-        df = pd.read_excel(excel_file, skiprows=1, nrows=40)
-        # 重命名列
-        df.columns = ['序号', '交易日期', '交易类型', '发生额合计', '发生额本金', '发生额利息', '发生额罚息', '本金余额', '流水号']
-        # 将DataFrame转换为JSON
-        json_data = df.to_json(orient='records', force_ascii=False)
-        json_data = json.loads(json_data)
+    # 解码Base64字符串为二进制数据
+    excel_data = base64.b64decode(excelbase64)
+    # 使用BytesIO将二进制数据转换为文件对象
+    excel_file = BytesIO(excel_data)
+    # 读取Excel文件，从第三行开始
+    df = pd.read_excel(excel_file, skiprows=1, nrows=40)
+    # 重命名列
+    df.columns = ['序号', '交易日期', '交易类型', '发生额合计', '发生额本金', '发生额利息', '发生额罚息', '本金余额', '流水号']
+    # 将DataFrame转换为JSON
+    json_data = df.to_json(orient='records', force_ascii=False)
+    json_data = json.loads(json_data)
+    dkje=None
+    for row in json_data:
+        if not row['交易日期']:
+            continue
+        excel_line_obj = {}
 
-        for row in json_data:
-            if not row['交易日期']:
-                continue
-            fsebj= row['发生额本金'].replace(',', '').replace('，', '').replace('.', '')
-            row['发生额本金'] = float(fsebj[:-2] + '.' + fsebj[-2:]) / 10000
-            if row['发生额本金']==0:
-                continue
+        if row['交易类型']=='信用额度开户':
+            print("贷款金额取信用额度开户")
+            dkje = row['发生额合计'].replace(',', '').replace('，', '').replace('.', '')
+            dkje = float(dkje[:-2] + '.' + dkje[-2:]) / 10000
 
-            excel_line_obj = {}
-            excel_line_obj['户名'] =hm
-            excel_line_obj['贷款金额'] =dkje
-            excel_line_obj['交易日期'] = row['交易日期']
-            excel_line_obj['交易类型'] = row['交易类型']
-            excel_line_obj['发生额本金'] = row['发生额本金']
-            excel_line_obj['流水号'] = row['流水号']
 
-            findmb = False
-            for item in json_data_mb:
-                if float(item['合同金额（万元）']) ==float(excel_line_obj['贷款金额']) and item['法定代表人姓名'] == excel_line_obj['户名']:
-                    excel_line_obj['业务编号'] = item['业务编号']
-                    excel_line_obj['债务人名称'] = item['客户名称']
-                    excel_line_obj['债务人证件号码'] = item['债务人证件号码']
-                    findmb = True
-                    break
+        fsebj= row['发生额本金'].replace(',', '').replace('，', '').replace('.', '')
+        row['发生额本金'] = float(fsebj[:-2] + '.' + fsebj[-2:]) / 10000
+        if row['发生额本金']==0:
+            continue
+
+
+        excel_line_obj['户名'] =hm
+        excel_line_obj['交易日期'] = row['交易日期']
+        excel_line_obj['交易类型'] = row['交易类型']
+        excel_line_obj['发生额本金'] = row['发生额本金']
+        excel_line_obj['流水号'] = row['流水号']
+        excel_line_obj['贷款金额'] = dkje
+
+
+
+
+        findmb = False
+        for item in json_data_mb:
+            if float(item['合同金额（万元）']) ==float(excel_line_obj['贷款金额']) and item['法定代表人姓名'] == excel_line_obj['户名']:
+                excel_line_obj['业务编号'] = item['业务编号']
+                excel_line_obj['债务人名称'] = item['客户名称']
+                excel_line_obj['债务人证件号码'] = item['债务人证件号码']
+                findmb = True
+                break
 
             if not findmb:
                 excel_line_obj['业务编号'] = ""
@@ -210,6 +221,11 @@ df = pd.DataFrame(excel_json)
 columns_order = ['户名', '业务编号', '债务人名称', '债务人证件号码', '贷款金额', '流水号', '交易类型', '发生额本金', '交易日期']
 # 重新排列DataFrame的列顺序
 df = df[columns_order]
+# 然后，将需要设置为纯文本格式的列转换为字符串
+text_columns = ['户名', '业务编号', '债务人名称', '债务人证件号码', '贷款金额', '流水号', '交易类型', '发生额本金', '交易日期']  # 举例，这些列需要转换为文本
+for col in text_columns:
+    if col in df.columns:
+        df[col] = df[col].astype(str)
 # 写入Excel文件，如果文件不存在，pandas会自动创建
 df.to_excel('用款流水登记台账模板.xlsx', index=False, engine='openpyxl')
 print("失败PDF：",shibaifile)
