@@ -3,7 +3,6 @@ import json
 import time
 import cv2
 import leidian
-import yanzheng
 import os
 import wmi
 c = wmi.WMI()
@@ -14,8 +13,8 @@ from tkinter import messagebox
 import requests
 import threading
 from tkinter import Tk
-
-yanzheng.method_name()
+# import yanzheng
+# yanzheng.method_name()
 
 root = Tk()
 root.withdraw()  # 隐藏主窗口
@@ -60,7 +59,7 @@ def send_notification(tz_str):
         response_json = response.json()
 
         if response_json["code"] == 0:
-            print("通知发送成功！")
+            print(f"通知{tz_str}发送成功！")
         else:
             print(f"通知发送失败，错误信息：{response_json['message']}")
     except Exception as e:
@@ -87,7 +86,7 @@ def send_notification2(tz_str):
         response_json = response.json()
 
         if response_json["code"] == 0:
-            print("通知发送成功！")
+            print(f"通知{tz_str}发送成功！")
         else:
             print(f"通知发送失败，错误信息：{response_json['message']}")
     except Exception as e:
@@ -190,18 +189,21 @@ def dopot(index):
             # 获取剪切板数据
             clipboard_content =str(pyperclip.paste())
             ma_key =  clipboard_content.split('linkChannel=')[1]
-            ma_name = config[ma_key]
-            #发通知
-            tz_str = f"{ma_name}有量！"
-            #弹窗提醒
-            # root.call('wm', 'attributes', '.', '-topmost', True)  # 将父窗口置顶
-            # messagebox.showinfo("提示", tz_str)
+            pyperclip.copy('')
+            if ma_key in config:
+                ma_name = config[ma_key]
+                # 发通知
+                tz_str = f"{ma_name}有量！"
 
-            #URL编码
+                # 示例调用函数
+                send_notification(tz_str)
+                send_notification2(tz_str)
+            else:
+                #抛出自定义异常
+                raise Exception("99")
 
-            # 示例调用函数
-            send_notification(tz_str)
-            send_notification2(tz_str)
+
+
 
 
     #返回主页

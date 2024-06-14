@@ -12,7 +12,7 @@ import sys
 print(sys.path)
 
 yanzheng.method_name('baidu_ocr260')
-maxi=1
+maxi=0
 
 def get_access_token():
     """
@@ -124,6 +124,7 @@ for file in pdf_files:
             findmb = True
             break
     if not findmb:
+        continue
         excel_line_obj['业务编号'] = ""
         excel_line_obj['债务人名称'] = ""
         excel_line_obj['债务人证件号码'] = ""
@@ -139,6 +140,10 @@ df = pd.DataFrame(excel_json)
 columns_order = ['户名', '业务编号', '债务人名称', '债务人证件号码', '贷款金额', '流水号', '交易类型', '发生额本金', '交易日期']
 # 重新排列DataFrame的列顺序
 df = df[columns_order]
+text_columns = ['户名', '业务编号', '债务人名称', '债务人证件号码', '贷款金额', '流水号', '交易类型', '发生额本金', '交易日期']  # 举例，这些列需要转换为文本
+for col in text_columns:
+    if col in df.columns:
+        df[col] = df[col].astype(str)
 # 写入Excel文件，如果文件不存在，pandas会自动创建
 df.to_excel('用款流水登记台账模板.xlsx', index=False, engine='openpyxl')
 

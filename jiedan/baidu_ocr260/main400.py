@@ -9,12 +9,12 @@ import time
 import pandas as pd
 from io import BytesIO
 import os
-import yanzheng
 import pandas as pd
 import io
 
+import yanzheng
 yanzheng.method_name('baidu_ocr400')
-maxi=1
+maxi=0
 
 def get_access_token():
     """
@@ -145,22 +145,30 @@ for file in pdf_files:
     # 将DataFrame转换为JSON
     json_data = df.to_json(orient='records', force_ascii=False)
     json_data = json.loads(json_data)
-
+    dkje=None
     for row in json_data:
         if not row['交易日期']:
             continue
+        excel_line_obj = {}
+
+        if row['交易类型']=='信用额度开户':
+            print("贷款金额取信用额度开户")
+            dkje = row['发生额合计'].replace(',', '').replace('，', '').replace('.', '')
+            dkje = float(dkje[:-2] + '.' + dkje[-2:]) / 10000
+
+
         fsebj= row['发生额本金'].replace(',', '').replace('，', '').replace('.', '')
         row['发生额本金'] = float(fsebj[:-2] + '.' + fsebj[-2:]) / 10000
         if row['发生额本金']==0:
             continue
 
-        excel_line_obj = {}
+
         excel_line_obj['户名'] =hm
-        excel_line_obj['贷款金额'] =dkje
         excel_line_obj['交易日期'] = row['交易日期']
         excel_line_obj['交易类型'] = row['交易类型']
         excel_line_obj['发生额本金'] = row['发生额本金']
         excel_line_obj['流水号'] = row['流水号']
+        excel_line_obj['贷款金额'] = dkje
 
 
 
@@ -175,6 +183,7 @@ for file in pdf_files:
                 break
 
         if not findmb:
+            continue
             excel_line_obj['业务编号'] = ""
             excel_line_obj['债务人名称'] = ""
             excel_line_obj['债务人证件号码'] =""
@@ -189,6 +198,11 @@ df = pd.DataFrame(excel_json)
 columns_order = ['户名', '业务编号', '债务人名称', '债务人证件号码', '贷款金额', '流水号', '交易类型', '发生额本金', '交易日期']
 # 重新排列DataFrame的列顺序
 df = df[columns_order]
+# 然后，将需要设置为纯文本格式的列转换为字符串
+text_columns = ['户名', '业务编号', '债务人名称', '债务人证件号码', '贷款金额', '流水号', '交易类型', '发生额本金', '交易日期']  # 举例，这些列需要转换为文本
+for col in text_columns:
+    if col in df.columns:
+        df[col] = df[col].astype(str)
 # 写入Excel文件，如果文件不存在，pandas会自动创建
 df.to_excel('用款流水登记台账模板.xlsx', index=False, engine='openpyxl')
 
