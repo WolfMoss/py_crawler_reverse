@@ -7,6 +7,7 @@ import subprocess
 import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import re
 
 with open('config.json', 'r') as f:
     config = json.load(f)
@@ -108,8 +109,8 @@ async def open_browser_fans(userobj):
                 if login_button:
                     #print(username,"尚未登录")
                     if not shurumima:
-                        await page.type('input[placeholder="请输入账号"]', username)
-                        await page.type('input[placeholder="请输入密码"]', psw)
+                        await page.fill('input[placeholder="请输入账号"]', username)
+                        await page.fill('input[placeholder="请输入密码"]', psw)
                         shurumima=True
                     await page.wait_for_timeout(1000)
                 else:
@@ -181,9 +182,26 @@ async def open_browser_zb(userobj):
             #     args=['--start-maximized',"--disable-blink-features=AutomationControlled"],viewport={"width": 1920, "height": 1080}, no_viewport=True
             # )
 
+
             await context.add_init_script(path='stealth.min.js')
             page0 = context.pages[0]
+
+            #先领取一个日常奖励过验证+++++++++++++++++++++++++++++++++++++++++
             await page0.goto('https://www.bilibili.com/blackboard/activity-h4oYj68f4J.html')
+            await page0.locator('div[data-fid="MJQhIGtbTzf"]').nth(0).click()
+            second_a_locator = page0.locator(
+                'div[style="position: absolute; top: 50%; left: 50%; margin-top: -475px; margin-left: -450px; width: 900px; height: 950px; overflow: auto;"] a:nth-child(4)')
+            # 点击定位到的a标签
+            # 在点击前设置监听器来捕获新页面
+            async with context.expect_page() as new_page_info:
+                await second_a_locator.click()
+            # 获取新页面对象
+            new_page = await new_page_info.value
+
+
+
+            # 先领取一个日常奖励过验证------------------------------------------
+
             page = await context.new_page()
             await page.goto('https://space.bilibili.com/')
 
@@ -195,8 +213,8 @@ async def open_browser_zb(userobj):
                 if login_button:
                     #print(username,"尚未登录")
                     if not shurumima:
-                        await page.type('input[placeholder="请输入账号"]', username)
-                        await page.type('input[placeholder="请输入密码"]', userobj['zb_user_psw'])
+                        await page.fill('input[placeholder="请输入账号"]', username)
+                        await page.fill('input[placeholder="请输入密码"]', userobj['zb_user_psw'])
                         shurumima = True
                     await page.wait_for_timeout(1000)
                 else:
@@ -206,8 +224,10 @@ async def open_browser_zb(userobj):
 
             # await page.goto('https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=8c8ea2b7')
             # await page.wait_for_timeout(3000)
-            # asyncio.create_task(page.evaluate(
-            #     '''() => {document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div").click();}'''))
+            # asyncio.create_task(page.evaluate('''() => {
+            #         var button = document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div");
+            #         setInterval(function() { button.click(); }, 100);
+            #     }'''))
 
             #循环判断当前时间，是否超过0:59:56秒，如果超过则点击按钮，如果超过1:00:05秒，则退出循环
             while True:
@@ -216,13 +236,31 @@ async def open_browser_zb(userobj):
                 current_time_str  = await page.evaluate("new Date().toLocaleTimeString()")
                 current_time = datetime.strptime(current_time_str, '%H:%M:%S').time()
                 if current_time >datetime.strptime('0:58:00', '%H:%M:%S').time() and current_time < datetime.strptime('2:00:00', '%H:%M:%S').time():
+                    await new_page.click('section.tool-wrap')
+                    try:
+                        div_style = await new_page.evaluate('''() => {
+                            const elements = document.querySelectorAll('div.geetest_item_wrap');
+                            return elements[1].getAttribute('style');}''')
+
+                        print("第二个div的style属性值:", div_style)
+
+                        # 使用正则表达式提取URL
+                        url_match = re.search(r'url\("([^"]+)"\)', div_style)
+                        if url_match:
+                            background_url = url_match.group(1)
+                            print("提取到的URL是:", background_url)
+                        else:
+                            print("没有找到匹配的URL")
+                    except Exception as e:
+                        print("获取style属性值时出错:", e)
+
                     #print("到第二天",current_time)
                     #判断当前是第几天
                     start_date_str = '20240605'  # 定义起始日期
                     day_difference = calculate_day_difference(start_date_str)
                     #print('day_difference===',current_time,day_difference)
                     if day_difference in urls:
-                        await page.goto(urls[day_difference])
+
 
                         beijing_time = get_time_beijing('https://www.bilibili.com/favicon.ico')
                         start_time = beijing_time.strftime('%H:%M:%S')
@@ -238,20 +276,23 @@ async def open_browser_zb(userobj):
 
                         while True:
 
-                            print("时间到了，点击按钮",start_time)
+                            print("时间到了，刷新按钮",start_time)
+                            await page.goto(urls[day_difference])
                             # 点击按钮
                             # await page.evaluate(
                             #     '''() => {document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div").click();}''')
 
-                            asyncio.create_task(page.evaluate(
-                                '''() => {document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div").click();}'''))
+                            asyncio.create_task(page.evaluate('''() => {
+                                    var button = document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div");
+                                    setInterval(function() { button.click(); }, 100);
+                                }'''))
 
                             # 等待 0.1 秒
                             await page.wait_for_timeout(100)
 
                             current_time_str = await page.evaluate("new Date().toLocaleTimeString()")
                             current_time = datetime.strptime(current_time_str, '%H:%M:%S').time()
-                            breaktime = datetime.strptime('1:00:05', '%H:%M:%S').time()
+                            breaktime = datetime.strptime('1:10:00', '%H:%M:%S').time()
                             #print("时间没到",current_time)
                             if current_time >= breaktime:
                                 print("时间到了，退出循环",current_time)
@@ -311,16 +352,16 @@ async def main():
     except subprocess.CalledProcessError as e:
         print(f"命令执行出错，错误代码：{e.returncode}")
     args = [
-        f"--remote-debugging-port=9224",
-        f"--user-data-dir=15268310998"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
+        f"--remote-debugging-port={auxiliary_users[0]['port']}",
+        f"--user-data-dir={auxiliary_users[0]['fs_user1']}"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
     ]
     try:
         subprocess.Popen([command] + args)
     except subprocess.CalledProcessError as e:
         print(f"命令执行出错，错误代码：{e.returncode}")
     args = [
-        f"--remote-debugging-port=9225",
-        f"--user-data-dir=18989606454"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
+        f"--remote-debugging-port={auxiliary_users[1]['port']}",
+        f"--user-data-dir={auxiliary_users[1]['fs_user2']}"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
     ]
     try:
         subprocess.Popen([command] + args)
