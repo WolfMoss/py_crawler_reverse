@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['bilibili_ys.py'],
+    ['test.py'],
     pathex=[],
     binaries=[],
-    datas=[('stealth.min.js', '.')],
+    datas=[],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='bilibili_ys',
+    name='test',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

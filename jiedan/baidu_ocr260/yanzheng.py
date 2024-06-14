@@ -62,10 +62,10 @@ class Client:
 
 
 def method_name(fucname):
-    hard_disk_serial_number = c.Win32_Processor()[0]  # 获取CPU序列号
-
+    hard_disk_serial_number = c.Win32_ComputerSystemProduct()[0]  # 获取CPU序列号
+    print(hard_disk_serial_number.UUID)
     device_from_json = {
-        "mac_address": hard_disk_serial_number.qualifiers['UUID'],
+        "mac_address": hard_disk_serial_number.UUID,
         "function_name": "validate_customer",
         "data_string": f"{fucname}"
     }

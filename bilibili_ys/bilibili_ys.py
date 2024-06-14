@@ -1,8 +1,23 @@
 import asyncio
 import json
-from datetime import datetime
 import traceback
 from playwright.async_api import async_playwright
+import os
+import subprocess
+import requests
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
+# 保存当前工作目录
+original_directory = os.getcwd()
+# 切换到目标目录
+target_directory = r"C:\Program Files (x86)\Microsoft\Edge\Application"
+os.chdir(target_directory)
+# 构建命令和参数列表
+command = "msedge.exe"
 
 urls = {
 1: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=eacf172b",
@@ -36,6 +51,18 @@ def random_danmu(i):
 
     return danmu_content[i]
 
+
+def get_time_beijing(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        date_time = response.headers['Date']
+        date_time_obj = datetime.strptime(date_time, '%a, %d %b %Y %H:%M:%S GMT')
+        gmt_time = date_time_obj.replace(tzinfo=ZoneInfo("UTC"))
+        beijing_time = gmt_time.astimezone(ZoneInfo("Asia/Shanghai"))
+        return beijing_time
+    else:
+        return None
+
 def calculate_day_difference(start_date_str):
     start_date = datetime.strptime(start_date_str, '%Y%m%d')
     current_date = datetime.now()  # 获取当前日期和时间
@@ -45,26 +72,30 @@ def calculate_day_difference(start_date_str):
 
 async def open_browser_fans(userobj):
     try:
-        with open('config.json', 'r') as f:
-            config = json.load(f)
+        usertype = sorted(userobj.keys())[0]
+        username = userobj[usertype]
+
+
         zb_zbj_url = config['zb_zbj_url']
 
         async with async_playwright() as p:
-            usertype = sorted(userobj.keys())[0]
-            username = userobj[usertype]
-            psw = userobj[sorted(userobj.keys())[1]]
-            browser = await p.chromium.launch_persistent_context(
-                user_data_dir='userdata/'+username,
-                accept_downloads=True,
-                headless=False,
-                bypass_csp=True,
-                #executable_path=edge_path
-                channel="msedge",
-                args=['--start-maximized',"--disable-blink-features=AutomationControlled"],viewport={"width": 1920, "height": 1080}, no_viewport=True
 
-            )
-            await browser.add_init_script(path='./stealth.min.js')
-            page = await browser.new_page()
+            psw = userobj[sorted(userobj.keys())[1]]
+            browser = await p.chromium.connect_over_cdp(f"http://localhost:{userobj['port']}")
+            context = browser.contexts[0]
+            # browser = await p.chromium.launch_persistent_context(
+            #     user_data_dir='userdata/'+username,
+            #     accept_downloads=True,
+            #     headless=False,
+            #     bypass_csp=True,
+            #     #executable_path=edge_path
+            #     channel="msedge",
+            #     args=['--start-maximized',"--disable-blink-features=AutomationControlled"],viewport={"width": 1920, "height": 1080}, no_viewport=True
+            #
+            # )
+
+            await context.add_init_script(path='stealth.min.js')
+            page = await context.new_page()
 
             await page.goto('https://space.bilibili.com/')
 
@@ -88,42 +119,39 @@ async def open_browser_fans(userobj):
 
             #跳转到直播间
             await page.goto(zb_zbj_url)
-            await page.wait_for_timeout(2000)
-            # 应用CSS变换进行缩放
-            await page.evaluate("""() => {
-                document.body.style.transform = 'scale(0.7)';
-                document.body.style.transformOrigin = 'top left';
-            }""")
 
-            #等待到第二天发弹幕6条，牛娃牛蛙1个
-            while False:
+            await page.wait_for_timeout(3000)
+
+
+            while True:
 
 
                 #print(username,'开始获取当前时间')
                 # 获取当前时间
                 current_time_str  = await page.evaluate("new Date().toLocaleTimeString()")
                 current_time = datetime.strptime(current_time_str, '%H:%M:%S').time()
-                if current_time >datetime.strptime('0:05:00', '%H:%M:%S').time() and current_time < datetime.strptime('1:00:00', '%H:%M:%S').time():
+                if current_time >datetime.strptime('0:05:00', '%H:%M:%S').time() and current_time < datetime.strptime('4:00:00', '%H:%M:%S').time():
                     print(username,'到第二天发弹幕6条，牛娃牛蛙1个')
 
                     # 循环6次
                     for i in range(8):
                         # 输入文字到当前焦点所在的元素（文本框）
-                        await page.mouse.click(1559, 880)
-                        await page.wait_for_timeout(1000)
+                        element_handle = await page.query_selector('textarea[placeholder="发个弹幕呗~"]')
+                        await element_handle.click()
                         await page.keyboard.type(random_danmu(i));
                         await page.click('span.txt:text("发送")')
                         await page.wait_for_timeout(2000)
 
-                    await page.mouse.click(1178, 891)
+                    xpath_selector = '//div[@data-v-1cf64c42="" and @data-v-bd2cfcf2="" and contains(@class, "gift-panel-switch") and contains(@class, "pointer")]'
+                    await page.locator(xpath_selector).nth(1).click()
                     await page.wait_for_timeout(1000)
-                    await page.mouse.move(1230, 676)
+                    await page.locator('div[data-report*="牛哇牛哇"]').nth(1).click()
                     await page.wait_for_timeout(1000)
-                    await page.mouse.click(1228, 734)
+                    await page.click('.user-click-send-area')
 
                     break
                 else:
-                    print(username,'还没到第二天')
+                    #print(username,'还没到第二天')
                     await asyncio.sleep(1)
 
             try:
@@ -138,22 +166,25 @@ async def open_browser_fans(userobj):
 
 async def open_browser_zb(userobj):
     try:
+        username = userobj['zb_user']
+
         async with async_playwright() as p:
-            usertype = sorted(userobj.keys())[0]
-            username = userobj[usertype]
-            browser = await p.chromium.launch_persistent_context(
-                user_data_dir='userdata/'+ username,
-                accept_downloads=True,
-                headless=False,
-                bypass_csp=True,
-                #executable_path=edge_path
-                channel="msedge",
-                args=['--start-maximized',"--disable-blink-features=AutomationControlled"],viewport={"width": 1920, "height": 1080}, no_viewport=True
-            )
-            await browser.add_init_script(path='./stealth.min.js')
-            page0 = browser.pages[0]
+            browser = await p.chromium.connect_over_cdp(f"http://localhost:{userobj['port']}")
+            context = browser.contexts[0]
+            # browser = await p.chromium.launch_persistent_context(
+            #     user_data_dir='userdata/'+ username,
+            #     accept_downloads=True,
+            #     headless=False,
+            #     bypass_csp=True,
+            #     #executable_path=edge_path
+            #     channel="msedge",
+            #     args=['--start-maximized',"--disable-blink-features=AutomationControlled"],viewport={"width": 1920, "height": 1080}, no_viewport=True
+            # )
+
+            await context.add_init_script(path='stealth.min.js')
+            page0 = context.pages[0]
             await page0.goto('https://www.bilibili.com/blackboard/activity-h4oYj68f4J.html')
-            page = await browser.new_page()
+            page = await context.new_page()
             await page.goto('https://space.bilibili.com/')
 
             dengdai = True
@@ -173,6 +204,10 @@ async def open_browser_zb(userobj):
                     dengdai = False
             print(username,"登录成功")
 
+            # await page.goto('https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=8c8ea2b7')
+            # await page.wait_for_timeout(3000)
+            # asyncio.create_task(page.evaluate(
+            #     '''() => {document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div").click();}'''))
 
             #循环判断当前时间，是否超过0:59:56秒，如果超过则点击按钮，如果超过1:00:05秒，则退出循环
             while True:
@@ -180,34 +215,52 @@ async def open_browser_zb(userobj):
                 # 获取当前时间
                 current_time_str  = await page.evaluate("new Date().toLocaleTimeString()")
                 current_time = datetime.strptime(current_time_str, '%H:%M:%S').time()
-                if current_time < datetime.strptime('2:00:00', '%H:%M:%S').time():
-                    print("到第二天",current_time)
+                if current_time >datetime.strptime('0:58:00', '%H:%M:%S').time() and current_time < datetime.strptime('2:00:00', '%H:%M:%S').time():
+                    #print("到第二天",current_time)
                     #判断当前是第几天
                     start_date_str = '20240605'  # 定义起始日期
                     day_difference = calculate_day_difference(start_date_str)
-                    print('day_difference===',current_time,day_difference)
+                    #print('day_difference===',current_time,day_difference)
                     if day_difference in urls:
                         await page.goto(urls[day_difference])
 
+                        beijing_time = get_time_beijing('https://www.bilibili.com/favicon.ico')
+                        start_time = beijing_time.strftime('%H:%M:%S')
+                        print('当前时间===', start_time)
+                        start_time = datetime.strptime(start_time, '%H:%M:%S')
+                        end_time = datetime.strptime("00:59:57", '%H:%M:%S')  # 设定结束时间
+
+                        time_difference = end_time - start_time  # 计算时间差
+                        # 对于 page.wait_for_timeout(),我们需要时间差的毫秒数
+                        wait_time = time_difference.total_seconds() * 1000
+                        print("wait_time===", wait_time)
+                        await page.wait_for_timeout(wait_time)
+
                         while True:
-                            clicktime = datetime.strptime('0:59:59', '%H:%M:%S').time()
-                            breaktime = datetime.strptime('1:00:02', '%H:%M:%S').time()
-                            # 判断当前时间是否超过0:59:56秒
-                            if current_time >= clicktime:
-                                print("时间到了，点击按钮",current_time)
-                                # 点击按钮
-                                await page.click("#app > div > div.home-wrap.select-disable > section.tool-wrap > div")
-                                # 等待 1 秒
-                                await asyncio.sleep(0.1)
-                            else:
-                                print("时间没到",current_time)
+
+                            print("时间到了，点击按钮",start_time)
+                            # 点击按钮
+                            # await page.evaluate(
+                            #     '''() => {document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div").click();}''')
+
+                            asyncio.create_task(page.evaluate(
+                                '''() => {document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div").click();}'''))
+
+                            # 等待 0.1 秒
+                            await page.wait_for_timeout(100)
+
+                            current_time_str = await page.evaluate("new Date().toLocaleTimeString()")
+                            current_time = datetime.strptime(current_time_str, '%H:%M:%S').time()
+                            breaktime = datetime.strptime('1:00:05', '%H:%M:%S').time()
+                            #print("时间没到",current_time)
                             if current_time >= breaktime:
                                 print("时间到了，退出循环",current_time)
                                 break
-                        break
+                    break
                 else:
-                    print(username,'还没到第二天')
-                    await asyncio.sleep(1)
+                    #print(username,'还没到第二天')
+                    #await asyncio.sleep(1)
+                    await page.wait_for_timeout(1000)
 
 
             # # 执行 JavaScript 代码
@@ -227,27 +280,59 @@ async def open_browser_zb(userobj):
         traceback.print_exc()
 
 async def main():
-    with open('config.json', 'r') as f:
-        config = json.load(f)
+
 
     zb_user = {
         'zb_user': config['zb_user'],
-        'zb_user_psw': config['zb_user_psw']
+        'zb_user_psw': config['zb_user_psw'],
+        'port': 9223
     }
 
     auxiliary_users = [
         {
             'fs_user1': config['fs_user1'],
-            'fs_user1_psw': config['fs_user1_psw']
+            'fs_user1_psw': config['fs_user1_psw'],
+            'port': 9224
         },
         {
             'fs_user2': config['fs_user2'],
-            'fs_user2_psw': config['fs_user2_psw']
+            'fs_user2_psw': config['fs_user2_psw'],
+            'port': 9225
         }
     ]
 
+    # 构建命令和参数列表
+    args = [
+        f"--remote-debugging-port=9223",
+        f"--user-data-dir=15268317813"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
+    ]
+    try:
+        subprocess.Popen([command] + args)
+    except subprocess.CalledProcessError as e:
+        print(f"命令执行出错，错误代码：{e.returncode}")
+    args = [
+        f"--remote-debugging-port=9224",
+        f"--user-data-dir=15268310998"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
+    ]
+    try:
+        subprocess.Popen([command] + args)
+    except subprocess.CalledProcessError as e:
+        print(f"命令执行出错，错误代码：{e.returncode}")
+    args = [
+        f"--remote-debugging-port=9225",
+        f"--user-data-dir=18989606454"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
+    ]
+    try:
+        subprocess.Popen([command] + args)
+    except subprocess.CalledProcessError as e:
+        print(f"命令执行出错，错误代码：{e.returncode}")
+
+    # 执行完毕后，切换回原始目录
+    os.chdir(original_directory)
+
     tasks = []
     for i, userobj in enumerate(auxiliary_users):
+
         task = open_browser_fans(userobj)
         tasks.append(task)
 
