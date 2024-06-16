@@ -1,14 +1,15 @@
 import asyncio
 import json
 import traceback
+import random
 from playwright.async_api import async_playwright
 import os
 import subprocess
+import base64
 import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import re
-
 with open('config.json', 'r') as f:
     config = json.load(f)
 
@@ -19,6 +20,11 @@ target_directory = r"C:\Program Files (x86)\Microsoft\Edge\Application"
 os.chdir(target_directory)
 # 构建命令和参数列表
 command = "msedge.exe"
+
+#配置--------------------------------------
+tjuser = config['tjuser']
+tjpsw = config['tjpsw']
+#-----------------------------------------
 
 urls = {
 1: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=eacf172b",
@@ -35,6 +41,21 @@ urls = {
 37: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=e8726b6a",
 40: "https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=03acb380"
 }
+
+def base64_api(uname, pwd, img, typeid):
+    response = requests.get(img)  # 从URL获取图片内容
+    base64_data = base64.b64encode(response.content)  # 编码图片内容为base64
+    b64 = base64_data.decode()
+    data = {"username": uname, "password": pwd, "typeid": typeid, "image": b64}
+    ers = requests.post("http://api.ttshitu.com/predict", json=data)
+    result = json.loads(ers.text)
+    if result['success']:
+        return result["data"]["result"]
+    else:
+        #！！！！！！！注意：返回 人工不足等 错误情况 请加逻辑处理防止脚本卡死 继续重新 识别
+        return result["message"]
+    return ""
+
 #随机弹幕
 def random_danmu(i):
     danmu_content = [
@@ -186,24 +207,62 @@ async def open_browser_zb(userobj):
             await context.add_init_script(path='stealth.min.js')
             page0 = context.pages[0]
 
-            #先领取一个日常奖励过验证+++++++++++++++++++++++++++++++++++++++++
-            await page0.goto('https://www.bilibili.com/blackboard/activity-h4oYj68f4J.html')
-            await page0.locator('div[data-fid="MJQhIGtbTzf"]').nth(0).click()
-            second_a_locator = page0.locator(
-                'div[style="position: absolute; top: 50%; left: 50%; margin-top: -475px; margin-left: -450px; width: 900px; height: 950px; overflow: auto;"] a:nth-child(4)')
-            # 点击定位到的a标签
-            # 在点击前设置监听器来捕获新页面
-            async with context.expect_page() as new_page_info:
-                await second_a_locator.click()
-            # 获取新页面对象
-            new_page = await new_page_info.value
-
-
-
-            # 先领取一个日常奖励过验证------------------------------------------
-
             page = await context.new_page()
             await page.goto('https://space.bilibili.com/')
+
+            # 测试验证码+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            # await page0.goto('https://space.bilibili.com/')
+            # await page0.wait_for_load_state('networkidle')
+            # await page0.fill('input[placeholder="请输入账号"]', username)
+            # await page0.fill('input[placeholder="请输入密码"]', userobj['zb_user_psw'])
+            # await page0.wait_for_selector('div[class="btn_primary "]', state="visible")
+            # await page0.locator('div[class="btn_primary "]').nth(0).click()
+            # await page0.wait_for_timeout(2000)
+            #
+            # # 定位到具有class="geetest_item_wrap"的div
+            # items = page0.locator('div.geetest_item_wrap')
+            # # 遍历所有找到的元素
+            # for i in range(await items.count()):
+            #     try:
+            #         imgelement = items.nth(i)
+            #         # 获取每个元素的data-attribute属性值
+            #         attribute_value = await items.nth(i).get_attribute('style')
+            #         print(f'第{i + 1}个元素的data-attribute属性值是: {attribute_value}')
+            #
+            #         # 使用正则表达式提取URL
+            #         url_match = re.search(r'url\("([^"]+)"\)', attribute_value)
+            #         if url_match:
+            #             background_url = url_match.group(1)
+            #             if "https://static.geetest.com/captcha_v3" in background_url:
+            #                 print("提取到的URL是:", background_url)
+            #                 break
+            #         else:
+            #             print("没有找到匹配的URL")
+            #     except Exception as e:
+            #         print("获取style属性值时出错:", e)
+            #
+            # imageCaptchaCode = base64_api(uname=tjuser, pwd=tjpsw, img=background_url,typeid=27)
+            # pots=[]
+            # imgpos = imageCaptchaCode.split("|")
+            # for imgpotstr in imgpos:
+            #     imgpotarr = imgpotstr.split(",")
+            #     pots.append([int(imgpotarr[0]) -10,int(imgpotarr[1])-10])
+            # print(pots)
+            # for pot in pots:
+            #     #在1000~3000随机一个值
+            #     await page0.wait_for_timeout(random.randint(1000,3000))
+            #     # 步骤2: 获取元素的边界框
+            #     box = await imgelement.bounding_box()
+            #     # 步骤4: 计算出最终的点击坐标
+            #     click_x = box['x'] + pot[0]
+            #     click_y = box['y'] + pot[1]
+            #     # 步骤5: 点击坐标
+            #     await page0.mouse.click(click_x, click_y)
+            #
+            # await page0.wait_for_timeout(random.randint(1000, 3000))
+            # await page0.click('.geetest_commit_tip')
+
+            # 测试验证码------------------------------------------------------------
 
             dengdai = True
             shurumima = False
@@ -222,37 +281,73 @@ async def open_browser_zb(userobj):
                     dengdai = False
             print(username,"登录成功")
 
-            # await page.goto('https://www.bilibili.com/blackboard/activity-award-exchange.html?task_id=8c8ea2b7')
-            # await page.wait_for_timeout(3000)
-            # asyncio.create_task(page.evaluate('''() => {
-            #         var button = document.querySelector("#app > div > div.home-wrap.select-disable > section.tool-wrap > div");
-            #         setInterval(function() { button.click(); }, 100);
-            #     }'''))
-
             #循环判断当前时间，是否超过0:59:56秒，如果超过则点击按钮，如果超过1:00:05秒，则退出循环
             while True:
                 #print(username,'开始获取当前时间')
                 # 获取当前时间
                 current_time_str  = await page.evaluate("new Date().toLocaleTimeString()")
                 current_time = datetime.strptime(current_time_str, '%H:%M:%S').time()
-                if current_time >datetime.strptime('0:58:00', '%H:%M:%S').time() and current_time < datetime.strptime('2:00:00', '%H:%M:%S').time():
-                    await new_page.click('section.tool-wrap')
-                    try:
-                        div_style = await new_page.evaluate('''() => {
-                            const elements = document.querySelectorAll('div.geetest_item_wrap');
-                            return elements[1].getAttribute('style');}''')
+                if current_time >datetime.strptime('0:57:00', '%H:%M:%S').time() and current_time < datetime.strptime('2:00:00', '%H:%M:%S').time():
+                    # 先领取一个日常奖励过验证+++++++++++++++++++++++++++++++++++++++++
+                    await page0.goto(config['zb_jl_url'])
+                    await page0.locator('div[data-fid="MJQhIGtbTzf"]').nth(0).click()
 
-                        print("第二个div的style属性值:", div_style)
+                    second_a_locator = page0.locator(
+                        'div[style="position: absolute; top: 50%; left: 50%; margin-top: -475px; margin-left: -450px; width: 900px; height: 950px; overflow: auto;"] a:nth-child(5)')
 
-                        # 使用正则表达式提取URL
-                        url_match = re.search(r'url\("([^"]+)"\)', div_style)
-                        if url_match:
-                            background_url = url_match.group(1)
-                            print("提取到的URL是:", background_url)
-                        else:
-                            print("没有找到匹配的URL")
-                    except Exception as e:
-                        print("获取style属性值时出错:", e)
+                    # 在点击前设置监听器来捕获新页面
+                    async with context.expect_page() as new_page_info:
+                        await second_a_locator.click()
+
+                    # 获取新页面对象
+                    new_page = await new_page_info.value
+                    await new_page.wait_for_timeout(2000)
+                    await new_page.click('section.tool-wrap') #领取奖励
+                    await new_page.wait_for_timeout(1000)
+                    # 定位到具有class="geetest_item_wrap"的div
+                    items = new_page.locator('div.geetest_item_wrap')
+                    # 遍历所有找到的元素
+                    for i in range(await items.count()):
+                        try:
+                            imgelement = items.nth(i)
+                            # 获取每个元素的data-attribute属性值
+                            attribute_value = await items.nth(i).get_attribute('style')
+                            print(f'第{i + 1}个元素的data-attribute属性值是: {attribute_value}')
+
+                            # 使用正则表达式提取URL
+                            url_match = re.search(r'url\("([^"]+)"\)', attribute_value)
+                            if url_match:
+                                background_url = url_match.group(1)
+                                if "https://static.geetest.com/captcha_v3" in background_url:
+                                    print("提取到的URL是:", background_url)
+                                    break
+                            else:
+                                print("没有找到匹配的URL")
+                        except Exception as e:
+                            print("获取style属性值时出错:", e)
+
+                    imageCaptchaCode = base64_api(uname=tjuser, pwd=tjpsw, img=background_url, typeid=27)
+                    pots = []
+                    imgpos = imageCaptchaCode.split("|")
+                    for imgpotstr in imgpos:
+                        imgpotarr = imgpotstr.split(",")
+                        pots.append([int(imgpotarr[0]) - 10, int(imgpotarr[1]) - 10])
+                    print(pots)
+                    for pot in pots:
+                        # 在1000~3000随机一个值
+                        await new_page.wait_for_timeout(random.randint(1000, 3000))
+                        # 步骤2: 获取元素的边界框
+                        box = await imgelement.bounding_box()
+                        # 步骤4: 计算出最终的点击坐标
+                        click_x = box['x'] + pot[0]
+                        click_y = box['y'] + pot[1]
+                        # 步骤5: 点击坐标
+                        await new_page.mouse.click(click_x, click_y)
+
+                    await new_page.wait_for_timeout(random.randint(1000, 3000))
+                    await new_page.click('.geetest_commit_tip')
+
+                    # 先领取一个日常奖励过验证------------------------------------------
 
                     #print("到第二天",current_time)
                     #判断当前是第几天
