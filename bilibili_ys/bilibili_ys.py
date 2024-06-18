@@ -303,9 +303,10 @@ async def open_browser_zb(userobj):
                     new_page = await new_page_info.value
                     await new_page.wait_for_timeout(2000)
                     await new_page.click('section.tool-wrap') #领取奖励
-                    await new_page.wait_for_timeout(1000)
+                    await new_page.wait_for_timeout(3000)
                     # 定位到具有class="geetest_item_wrap"的div
                     items = new_page.locator('div.geetest_item_wrap')
+                    print("验证码元素师数量===",await items.count())
                     # 遍历所有找到的元素
                     for i in range(await items.count()):
                         try:
