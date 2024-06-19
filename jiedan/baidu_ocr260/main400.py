@@ -26,7 +26,7 @@ def get_access_token():
     params = {"grant_type": "client_credentials", "client_id": API_KEY, "client_secret": SECRET_KEY}
     return str(requests.post(url, params=params).json().get("access_token"))
 
-API_KEY = "SXZ6Ym9WTySuuNPjKmf1R7gb"
+API_KEY = "xxx"
 SECRET_KEY = "lKNufVSBDn8hfwZm5poZB5kcdfpbI5OO"
 access_token = get_access_token()
 
