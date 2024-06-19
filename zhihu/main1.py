@@ -163,6 +163,8 @@ if __name__ == '__main__':
         # browser = playwright.chromium.connect_over_cdp('http://localhost:8899/')
         # context = browser.contexts[0]
         browser = playwright.chromium
+        #隐藏浏览器窗口
+
         context = browser.launch_persistent_context(
             user_data_dir='userdata',
             accept_downloads=True,
