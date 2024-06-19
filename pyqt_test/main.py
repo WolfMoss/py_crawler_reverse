@@ -1,43 +1,30 @@
-import random
-import sys
-
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import (QApplication, QLabel, QPushButton,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QTextBrowser, QPushButton
+from main_ui import Ui_Form
 
 
-class MyWidget(QWidget):
+class MyMainWindow(QWidget):
     def __init__(self):
-        QWidget.__init__(self)
+        super().__init__()
 
-        self.hello = [
-            "Hallo Welt",
-            "浣犲ソ锛屼笘鐣�",
-            "Hei maailma",
-            "Hola Mundo",
-            "袩褉懈胁械褌 屑懈褉",
-        ]
+        # 初始化 UI
+        self.ui = Ui_Form()
+        self.ui.setupUi(self)
 
-        self.button = QPushButton("Click me!")
-        self.message = QLabel("Hello World")
-        self.message.alignment = Qt.AlignCenter
+        # 获取UI文件中的小部件对象
+        self.textEdit = self.ui.textEdit
+        self.pushButton = self.ui.pushButton
 
-        self.layout = QVBoxLayout(self)
-        self.layout.addWidget(self.message)
-        self.layout.addWidget(self.button)
+        # 连接信号和槽
+        self.pushButton.clicked.connect(lambda:self.pushButton_click("Hello, World!"))
 
-        # Connecting the signal
-        self.button.clicked.connect(self.magic)
-
-    @Slot()
-    def magic(self):
-        self.message.text = random.choice(self.hello)
+    # 函数
+    def pushButton_click(self, text):
+        self.textEdit.setText(text)
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
 
-    widget = MyWidget()
-    widget.show()
-
-    sys.exit(app.exec())
+if __name__ == '__main__':
+    app = QApplication([])
+    mainWindow = MyMainWindow()
+    mainWindow.show()
+    app.exec()

@@ -303,7 +303,7 @@ async def open_browser_zb(userobj):
                     new_page = await new_page_info.value
                     await new_page.wait_for_timeout(2000)
                     await new_page.click('section.tool-wrap') #领取奖励
-                    await new_page.wait_for_timeout(3000)
+                    await new_page.wait_for_timeout(2000)
                     # 定位到具有class="geetest_item_wrap"的div
                     items = new_page.locator('div.geetest_item_wrap')
                     print("验证码元素师数量===",await items.count())
@@ -336,7 +336,7 @@ async def open_browser_zb(userobj):
                     print(pots)
                     for pot in pots:
                         # 在1000~3000随机一个值
-                        await new_page.wait_for_timeout(random.randint(1000, 3000))
+                        await new_page.wait_for_timeout(random.randint(500, 1500))
                         # 步骤2: 获取元素的边界框
                         box = await imgelement.bounding_box()
                         # 步骤4: 计算出最终的点击坐标
@@ -345,7 +345,7 @@ async def open_browser_zb(userobj):
                         # 步骤5: 点击坐标
                         await new_page.mouse.click(click_x, click_y)
 
-                    await new_page.wait_for_timeout(random.randint(1000, 3000))
+                    await new_page.wait_for_timeout(random.randint(500, 1000))
                     await new_page.click('.geetest_commit_tip')
 
                     # 先领取一个日常奖励过验证------------------------------------------
