@@ -4,10 +4,11 @@ import traceback
 import asyncio
 from playwright.async_api import async_playwright
 import subprocess
+from screeninfo import get_monitors
 with open('config.json', 'r') as f:
     config = json.load(f)
-import km_yanzheng
-km_yanzheng.method_name(config['km'])
+# import km_yanzheng
+# km_yanzheng.method_name(config['km'])
 maxi = 1
 
 command = config['chromepath']
@@ -39,7 +40,7 @@ def get_profile_name(profile_path):
     if os.path.exists(preferences_path):
         with open(preferences_path, 'r', encoding='utf-8') as f:
             preferences = json.load(f)
-            profile_name = preferences.get('profile', {}).get('name', None)
+            profile_name = preferences['account_info'][0]['full_name']
             return profile_name
     return None
 
@@ -52,17 +53,22 @@ def close_browser(browser_process):
         browser_process.kill()
 
 async def main():
+    monitor = get_monitors()[0]
+    screen_width = monitor.width
+    screen_height = monitor.height
     profiles = get_chrome_profiles()
 
     if profiles:
         print("找到的 Chrome 用户 Profile 目录：")
         for profile in profiles:
             profile_path = os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data') + f"\\{profile}"
-            profile_name = get_profile_name(profile_path)
-            print(f"Profile 目录: {profile} -> 名称: {profile_name if profile_name else '未命名'}")
+            #profile_name = get_profile_name(profile_path)
+            print(f"Profile 目录: {profile}")
     else:
         print("未找到任何 Chrome 用户 Profile。")
         return
+
+    shibais=[]
 
     i = 0
     for profile in profiles:
@@ -71,6 +77,7 @@ async def main():
         print(f"正在打开 {profile}...")
         # 构建命令和参数列表
         args = [
+            #f"--start-maximized",
             f"--remote-debugging-port=9223",
             f"--profile-directory={profile}"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
         ]
@@ -83,52 +90,67 @@ async def main():
         async with async_playwright() as p:
             browser = await p.chromium.connect_over_cdp(f"http://localhost:9223")
             context = browser.contexts[0]
+
             await context.add_init_script(path='stealth.min.js')
             try:
                 page = await context.new_page()
-                extension_id = 'nkbihfbeogaeaoehlefnkodbefgpgknn'
+                await page.set_viewport_size({"width": screen_width, "height": screen_height})
+
                 # 等待弹出的窗口并捕获它
                 async with context.expect_page() as new_page_info:
                     await page.goto('https://app.galxe.com/quest/IoTeX/GCqr8tgiEu')
+                    await page.wait_for_load_state('load',timeout=60000)
+                    await page.wait_for_timeout(2000)
+                    await page.wait_for_selector("button:has-text('Log in')",timeout=60000)
+                    await page.locator("button:has-text('Log in')").nth(0).click()
                     await page.wait_for_load_state('load')
-                    await page.locator("button:has-text('Log in')").click()
-                    # 查找包含MetaMask子元素的父div
-                    target_div = page.locator(
-                        "div.col-span-2.sm\\:col-span-4.text-sm.font-bold >> div.flex.justify-between.items-center.h-\\[56px\\].rounded-8.cursor-pointer.border-component-dialog.border.hover\\:border-white.active\\:border-\\[\\#FFFFFF80\\].px-4.py-3\\.5:has(div:has-text('MetaMask'))")
-                    # 验证找到的div数量
-                    count = await target_div.count()
-                    print(f"Found {count} div(s) containing a child div with text 'MetaMask'")
-                    # 示例操作: 如果找到了至少一个这样的div，点击第一个
-                    if count > 0:
-                        await target_div.nth(0).click()
-                    else:
-                        raise Exception("找不到登录按钮")
-
-                    # 打开 MetaMask 弹出窗口
+                    await page.wait_for_timeout(2000)
+                    # # 查找包含MetaMask子元素的父div
+                    # target_div = page.locator(
+                    #     "div.col-span-2.sm\\:col-span-4.text-sm.font-bold >> div.flex.justify-between.items-center.h-\\[56px\\].rounded-8.cursor-pointer.border-component-dialog.border.hover\\:border-white.active\\:border-\\[\\#FFFFFF80\\].px-4.py-3\\.5:has(div:has-text('MetaMask'))")
+                    # # 验证找到的div数量
+                    # count = await target_div.count()
+                    # print(f"Found {count} div(s) containing a child div with text 'MetaMask'")
+                    # # 示例操作: 如果找到了至少一个这样的div，点击第一个
+                    # if count > 0:
+                    #     await target_div.nth(0).click()
+                    # else:
+                    #     raise Exception("找不到登录按钮")
+                    await page.wait_for_selector("div.ml-3:has-text('MetaMask')", timeout=60000)
+                    await page.locator("div.ml-3:has-text('MetaMask')").click()
+                    await page.wait_for_timeout(2000)
 
                 metamask_page = await new_page_info.value
-
-
-
+                await metamask_page.wait_for_timeout(1000)
                 # 在 MetaMask 窗口上执行操作
-                await metamask_page.wait_for_load_state('load')
+                await metamask_page.wait_for_load_state('load',timeout=60000)
                 # 示例操作：输入密码并点击登录
                 await metamask_page.fill('input[type="password"]', '12345678')  # 替换为实际的密码字段选择器
+                await metamask_page.wait_for_selector("button:has-text('登录')", timeout=60000)
                 await metamask_page.locator("button:has-text('登录')").click()
                 await metamask_page.wait_for_load_state('load')
+                await metamask_page.wait_for_selector("button:has-text('下一步')", timeout=60000)
                 await metamask_page.locator("button:has-text('下一步')").click()
                 await metamask_page.wait_for_load_state('load')
+                await metamask_page.wait_for_selector("button:has-text('确认')", timeout=60000)
                 await metamask_page.locator("button:has-text('确认')").click()
+                try:
+                    await metamask_page.wait_for_selector("button:has-text('登录')", timeout=5000)
+                    await metamask_page.locator("button:has-text('登录')").click()
+                except:
+                    print("已登录")
                 await metamask_page.wait_for_load_state('load')
                 # 按下ESC键
                 await page.wait_for_timeout(1000)
                 await page.keyboard.press("Escape")
 
                 try:
-                    async with context.expect_page(timeout=5000) as new_page_info:
+                    async with context.expect_page(timeout=10000) as new_page_info:
+                        await page.wait_for_selector("p:has-text('Daily Visit the IoTeX Website')", timeout=10000)
                         await page.locator("p:has-text('Daily Visit the IoTeX Website')").click()
 
                     yanzheng_page = await new_page_info.value
+                    await yanzheng_page.wait_for_selector("button:has-text('Continue to Access')", timeout=60000)
                     await yanzheng_page.locator("button:has-text('Continue to Access')").click()
                     await asyncio.sleep(1)
                 except:
@@ -139,13 +161,14 @@ async def main():
                 #等待领取++++++++++++++++++++++++++++++++++++++++
                 shangxian = 0
                 while True:
-                    if shangxian>2 :
+                    if shangxian>1 :
                         print(profile,"超过2次找不到领取按钮")
-                        break #超过5次找不到领取按钮就放弃
+                        raise Exception("超过2次找不到领取按钮")
                     try:
                         await page.reload()
                         await page.wait_for_load_state('load')
-                        await page.wait_for_timeout(3000)
+                        await page.wait_for_timeout(1000)
+                        await page.wait_for_selector("div:has-text('Claim 5 Points')", timeout=10000)
                         await page.add_script_tag(content="""
                                 function aaaa(){
                                     let clicked = false;
@@ -179,10 +202,15 @@ async def main():
 
 
             except Exception as e:
-                print(f" {profile} 失败: {e}")
+                profile_path = os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data') + f"\\{profile}"
+                #profile_name = get_profile_name(profile_path)
+                print(f" {profile}失败: {e}")
+                shibais.append(f"{profile}")
                 traceback.print_exc()
             finally:
                 close_browser(browser_process)
         i = i + 1
+    print("运行结束，以下是失败的+++++++++++++++++++++++++++")
+    print(shibais)
 
 asyncio.run(main())
