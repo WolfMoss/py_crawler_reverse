@@ -132,10 +132,10 @@ async def main():
                     #     raise Exception("找不到登录按钮")
                     await page.wait_for_selector("div.ml-3:has-text('MetaMask')", timeout=60000)
                     await page.locator("div.ml-3:has-text('MetaMask')").click()
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(3000)
 
                 metamask_page = await new_page_info.value
-                await metamask_page.wait_for_timeout(1000)
+                await metamask_page.wait_for_timeout(2000)
                 # 在 MetaMask 窗口上执行操作
                 await metamask_page.wait_for_load_state('load',timeout=60000)
                 # 示例操作：输入密码并点击登录
@@ -182,11 +182,11 @@ async def main():
                         await page.reload()
                         await page.wait_for_load_state('load')
                         await page.wait_for_load_state('domcontentloaded')
-                        await page.wait_for_timeout(3000)
+                        await page.wait_for_timeout(4000)
 
                         #selector = "body > div > main > div > div.style_bottom-section__67Akm > div > div.flex.items-center.justify-end.z-\\[2\\].w-full > div.style_claim-button__XFPGx.ml-\\[4px\\] > div > button > div"
                         selector = "div.style_claim-button__XFPGx.ml-\\[4px\\] > div > button > div"
-                        await page.locator(selector).wait_for(timeout=27000)
+                        await page.locator(selector).wait_for(timeout=25000)
 
                         element_text = await page.evaluate('''
                             () => {
@@ -216,11 +216,13 @@ async def main():
                                 """)
                             # 使用 JavaScript 查找并点击包含特定子元素文本的 button
                             result = await page.evaluate("console.log('11111111');aaaa()")
-                            print("领取成功")
+
                             if result:
                                 print(
                                     "Successfully clicked the button with a child div containing text 'Claim 5 Points'")
                                 await page.wait_for_timeout(4000)
+                                chenggonged.append(profile)
+                                print("领取成功")
                                 break
                             else:
                                 raise Exception("No button found with a child div containing text 'Claim 5 Points'")
@@ -252,7 +254,8 @@ async def main():
                 traceback.print_exc()
 
     print("运行结束，以下是失败的+++++++++++++++++++++++++++")
-    print(shibais)
+    shibais1=[item for item in shibais if item not in chenggonged]
+    print(shibais1)
     print("以下是还未运行的+++++++++++++++++++++++++++")
     result1 = [item for item in profiles if item not in shibais]
     result = [item for item in result1 if item not in chenggonged]
