@@ -54,20 +54,20 @@ class Client:
     def handle_response(self,response):
         # 在这里处理服务器返回的消息
         print(response)
-        if response == 'exit':
+        if response != '1':
             print("退出")
             # 关闭整个程序
             os._exit(0)
         self.client_socket.close()
 
 
-def method_name(fucname):
+def method_name(appname):
     hard_disk_serial_number = c.Win32_ComputerSystemProduct()[0]  # 获取CPU序列号
     print(hard_disk_serial_number.UUID)
     device_from_json = {
         "mac_address": hard_disk_serial_number.UUID,
         "function_name": "validate_customer",
-        "data_string": f"{fucname}"
+        "data_string": f"{appname}"
     }
     yanzhengstr = json.dumps(device_from_json)
 

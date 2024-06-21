@@ -107,57 +107,48 @@ def get_msg_seng(data,addr):
 
 #业务方法+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def validate_customer(device):
-    with open('config.json', 'r', encoding='utf-8') as f:
-        config = json.load(f)
-        data_string=device.data_string
+
+    app_name=device.data_string
 
 
+    current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-        # 遍历 Customers 列表
-        incustomer = False
-        for customer in config["Customers"]:
-            if data_string in customer["name"]:
-                incustomer=True
-                outdate = customer["date"]
-                usenum = customer['usenum']
-                current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-                if current_time > outdate:
-                    print("过期")
-                    return "exit"
-                else:
-                    print("未过期")
+    db = pymysql.connect(host='idnmd.top', user='root', passwd='ilikecs123!', port=3306,
+                         db='quant')
 
-                    db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306,
-                                         db='quant')
+    cursor = db.cursor()
+    cursor.execute(f"SELECT * FROM jiedan_key WHERE hard_disk_serial_number='{device.mac_address}' and appname='{app_name}'")
+    results = cursor.fetchall()
+    if len(results) > 0: #APPNAME和CPU符合，注册用户，通过
+        #判断是否超时
+        outtime = str(results[0][3])
+        if current_time > outtime:
+            return "TIMEOUT"
+            db.close()
+        else:
 
-                    cursor = db.cursor()
-                    cursor.execute(f"SELECT * FROM jiedan_key WHERE hard_disk_serial_number='{device.mac_address}' and func_name='{customer['name']}'")
-                    results = cursor.fetchall()
-                    if len(results) > 0:
-                        db.close()
-                        return "1"
+            db.close()
+            return "1"
 
-                    cursor.execute(
-                        f"SELECT * FROM jiedan_key WHERE func_name='{customer['name']}'")
-                    results = cursor.fetchall()
-                    if len(results)+1 > usenum:
-                        print("超出使用量限制")
-                        db.close()
-                        return "exit"
+    else:
+        cursor.execute(
+            f"SELECT * FROM jiedan_key WHERE appname='{app_name}'")
+        results = cursor.fetchall()
+        if len(results) <= 0:
+            #卡密找不到纪录，不通过
+            db.close()
+            return "NO KM"
+        else: #卡密符合，注册用户，通过
+            query = """
+                UPDATE jiedan_key 
+                SET hard_disk_serial_number = %s 
+                WHERE appname = %s
+            """
+            cursor.execute(query, (device.mac_address, app_name))
+            db.commit()
+            db.close()
+            return "1"
 
-                    cursor.execute(
-                        f"INSERT INTO jiedan_key (func_name, hard_disk_serial_number,is_used) VALUES ('{customer['name']}', '{device.mac_address}', 1)")
-
-                    # 提交事务
-                    db.commit()
-                    db.close()
-
-                    return "1"
-
-
-        if not incustomer :
-            print("客户不在列表")
-            return "exit"
 
 
 def function_b(device):
@@ -176,4 +167,11 @@ FUNCTION_MAP = {
 #业务方法-------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    start_server()
+
+    a=validate_customer(NetworkDevice.from_dict({
+        "mac_address": 'sdfdsg',
+        "function_name": "validate_customer",
+        "data_string": 'appname1'
+    }))
+    print(a)
+    #start_server()

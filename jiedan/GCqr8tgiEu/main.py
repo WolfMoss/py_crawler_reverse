@@ -175,7 +175,7 @@ async def main():
                 #等待领取++++++++++++++++++++++++++++++++++++++++
                 shangxian = 0
                 while True:
-                    if shangxian>1 :
+                    if shangxian>2 :
                         print(profile,"超过2次找不到领取按钮")
                         raise Exception("超过2次找不到领取按钮")
                     try:
