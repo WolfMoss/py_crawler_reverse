@@ -5,11 +5,12 @@ import asyncio
 from playwright.async_api import async_playwright
 import subprocess
 from screeninfo import get_monitors
+import ast
 with open('config.json', 'r') as f:
     config = json.load(f)
 # import km_yanzheng
 # km_yanzheng.method_name(config['km'])
-maxi = 1
+maxi = 0
 
 command = config['chromepath']
 
@@ -69,30 +70,43 @@ async def main():
         return
 
     shibais=[]
+    chenggonged=[]
 
-    i = 0
-    for profile in profiles:
-        if i>=10 and maxi==1:
-            break
-        print(f"正在打开 {profile}...")
-        # 构建命令和参数列表
-        args = [
-            #f"--start-maximized",
-            f"--remote-debugging-port=9223",
-            f"--profile-directory={profile}"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
-        ]
+
+    with open('zhiding.txt', 'r') as f:
         try:
+            content = f.read().strip()
+            if len(content)>0:
+                list_data = ast.literal_eval(content)
+                if len(list_data)>0:
+                    print("执行指定浏览器",list_data)
+                    profiles= list_data
+                else:
+                    raise Exception("")
+            else:
+                raise Exception("")
+        except Exception as e:
+            traceback.print_exc()
+            print("没有指定浏览器，执行所有。")
+
+    for profile in profiles:
+        try:
+            print(f"正在打开 {profile}...")
+            # 构建命令和参数列表
+            args = [
+                #f"--start-maximized",
+                f"--remote-debugging-port=9223",
+                f"--profile-directory={profile}"  # 注意路径字符串应为原始字符串以避免转义问题，或适当处理含有空格的情况
+            ]
+
             browser_process = subprocess.Popen([command] + args)
-        except subprocess.CalledProcessError as e:
-            print(f"命令执行出错，错误代码：{e.returncode}")
-            continue
 
-        async with async_playwright() as p:
-            browser = await p.chromium.connect_over_cdp(f"http://localhost:9223")
-            context = browser.contexts[0]
+            async with async_playwright() as p:
+                browser = await p.chromium.connect_over_cdp(f"http://localhost:9223")
+                context = browser.contexts[0]
 
-            await context.add_init_script(path='stealth.min.js')
-            try:
+                await context.add_init_script(path='stealth.min.js')
+
                 page = await context.new_page()
                 await page.set_viewport_size({"width": screen_width, "height": screen_height})
 
@@ -152,7 +166,7 @@ async def main():
                     yanzheng_page = await new_page_info.value
                     await yanzheng_page.wait_for_selector("button:has-text('Continue to Access')", timeout=60000)
                     await yanzheng_page.locator("button:has-text('Continue to Access')").click()
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(3)
                 except:
                     print(profile,"已验证")
 
@@ -167,33 +181,56 @@ async def main():
                     try:
                         await page.reload()
                         await page.wait_for_load_state('load')
-                        await page.wait_for_timeout(1000)
-                        await page.wait_for_selector("div:has-text('Claim 5 Points')", timeout=10000)
-                        await page.add_script_tag(content="""
-                                function aaaa(){
-                                    let clicked = false;
-                                    document.querySelectorAll('button').forEach(button => {
-                                        const div = button.querySelector('div');
-                                        if (div && div.textContent.includes('Claim 5 Points')) {
-                                            button.click();
-                                            console.log('Clicked a button containing a child div with text "Claim 5 Points"');
-                                            clicked = true;
-                                            return;  // 只点击第一个匹配项，然后退出循环
-                                        }else {
-                                            console.log('000000');
-                                        }
-                                    });
-                                    return clicked;  // 返回是否找到并点击了按钮
-                                }
-                            """)
-                        # 使用 JavaScript 查找并点击包含特定子元素文本的 button
-                        result = await page.evaluate("console.log('11111111');aaaa()")
-                        if result:
-                            print("Successfully clicked the button with a child div containing text 'Claim 5 Points'")
-                            await page.wait_for_timeout(5000)
+                        await page.wait_for_load_state('domcontentloaded')
+                        await page.wait_for_timeout(3000)
+
+                        #selector = "body > div > main > div > div.style_bottom-section__67Akm > div > div.flex.items-center.justify-end.z-\\[2\\].w-full > div.style_claim-button__XFPGx.ml-\\[4px\\] > div > button > div"
+                        selector = "div.style_claim-button__XFPGx.ml-\\[4px\\] > div > button > div"
+                        await page.locator(selector).wait_for(timeout=27000)
+
+                        element_text = await page.evaluate('''
+                            () => {
+                                var element = document.querySelector('div[class*="style_claim-button__XFPGx ml-\\[4px\\]"] > div > button > div');
+                                return element ? element.textContent : null;
+                            }
+                        ''')
+                        print(element_text)
+                        if  element_text == "Claim 5 Points": #可领取，算成功
+                            #await page.wait_for_selector("div:has-text('Claim 5 Points')", timeout=27000)
+                            await page.add_script_tag(content="""
+                                    function aaaa(){
+                                        let clicked = false;
+                                        document.querySelectorAll('button').forEach(button => {
+                                            const div = button.querySelector('div');
+                                            if (div && div.textContent.includes('Claim 5 Points')) {
+                                                button.click();
+                                                console.log('Clicked a button containing a child div with text "Claim 5 Points"');
+                                                clicked = true;
+                                                return;  // 只点击第一个匹配项，然后退出循环
+                                            }else {
+                                                console.log('000000');
+                                            }
+                                        });
+                                        return clicked;  // 返回是否找到并点击了按钮
+                                    }
+                                """)
+                            # 使用 JavaScript 查找并点击包含特定子元素文本的 button
+                            result = await page.evaluate("console.log('11111111');aaaa()")
+                            print("领取成功")
+                            if result:
+                                print(
+                                    "Successfully clicked the button with a child div containing text 'Claim 5 Points'")
+                                await page.wait_for_timeout(4000)
+                                break
+                            else:
+                                raise Exception("No button found with a child div containing text 'Claim 5 Points'")
+                        elif element_text == "Claimed": #已领取，算已领取
+                            print("检测到已领取")
+                            chenggonged.append(profile)
                             break
-                        else:
-                            raise Exception("No button found with a child div containing text 'Claim 5 Points'")
+                        else: #未加载
+                            raise Exception("未加载")
+
                     except Exception as e:
                         shangxian= shangxian+1
                         print("还没有可领取",e)
@@ -201,16 +238,25 @@ async def main():
                 #领取结束------------------------------------
 
 
-            except Exception as e:
-                profile_path = os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data') + f"\\{profile}"
-                #profile_name = get_profile_name(profile_path)
+        except Exception as e:
+            try:
                 print(f" {profile}失败: {e}")
                 shibais.append(f"{profile}")
                 traceback.print_exc()
-            finally:
+            except Exception as e:
+                traceback.print_exc()
+        finally:
+            try:
                 close_browser(browser_process)
-        i = i + 1
+            except Exception as e:
+                traceback.print_exc()
+
     print("运行结束，以下是失败的+++++++++++++++++++++++++++")
     print(shibais)
+    print("以下是还未运行的+++++++++++++++++++++++++++")
+    result1 = [item for item in profiles if item not in shibais]
+    result = [item for item in result1 if item not in chenggonged]
+    print(result)
+
 
 asyncio.run(main())
