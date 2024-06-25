@@ -71,7 +71,7 @@ def method_name(appname):
     }
     yanzhengstr = json.dumps(device_from_json)
 
-    client = Client('axiba.idnmd.top', 9999)
+    client = Client('idnmd.top', 9999)
     receiving_thread = threading.Thread(target=client.start_receiving)
     receiving_thread.daemon = True
     receiving_thread.start()
@@ -79,3 +79,7 @@ def method_name(appname):
 
 
 #验证---------------------------------------------------------------------
+
+# method_name('baidu_ocr4001')
+# while True:
+#     pass

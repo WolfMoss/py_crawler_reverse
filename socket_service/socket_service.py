@@ -5,6 +5,10 @@ import time
 import traceback
 import pymysql
 
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
+
 #定义方法++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def to_json(obj):
     return json.dumps(obj.to_dict())
@@ -113,7 +117,7 @@ def validate_customer(device):
 
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-    db = pymysql.connect(host='idnmd.top', user='root', passwd='ilikecs123!', port=3306,
+    db = pymysql.connect(host=config['mysqlip'], user=config['mysqluser'], passwd=config['mysqlpse'], port=config['port'],
                          db='quant')
 
     cursor = db.cursor()
@@ -168,10 +172,10 @@ FUNCTION_MAP = {
 
 if __name__ == '__main__':
 
-    a=validate_customer(NetworkDevice.from_dict({
-        "mac_address": 'sdfdsg',
-        "function_name": "validate_customer",
-        "data_string": 'appname1'
-    }))
-    print(a)
-    #start_server()
+    # a=validate_customer(NetworkDevice.from_dict({
+    #     "mac_address": 'sdfdsg',
+    #     "function_name": "validate_customer",
+    #     "data_string": 'appname1'
+    # }))
+    # print(a)
+    start_server()
