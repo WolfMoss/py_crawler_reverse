@@ -1,23 +1,5 @@
 import requests
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import unpad
-import base64
-
-# 自定义的处理函数
-def en(hex_string):
-    return hex_string  # 这里仅作为示例，实际上可能有其他处理
-
-# AES解密函数
-def decrypt_aes_ecb(t, key):
-    cipher = AES.new(key, AES.MODE_ECB)
-    decoded_data = base64.b64decode(t)
-    decrypted_bytes = cipher.decrypt(decoded_data)
-    try:
-        decrypted_text = unpad(decrypted_bytes, AES.block_size, style='pkcs7').decode('utf-8')
-    except ValueError:
-        # 填充移除失败，返回解密的原始字节数据
-        decrypted_text = decrypted_bytes.decode('utf-8').rstrip('\x02')
-    return decrypted_text
+import execjs
 
 
 
@@ -50,19 +32,20 @@ response = requests.request("GET", url, headers=headers, data=payload)
 print(response.json())
 
 wait_data = response.json()['data']
-n='6fb8d6f248074171'
+n='Y29pbmdsYXNzL2Fw'
+headersuser=response.headers['User']
+
+# 读取 JavaScript 文件
+with open('coinglass.js', 'r', encoding='utf-8') as file:
+    js_code = file.read()
+
+# 创建 Node.js 运行时引擎上下文
+ctx = execjs.get('Node').compile(js_code)
+
+# 调用 JavaScript 函数并传递参数
+result = ctx.call('jiemi', wait_data, headersuser,n)
+
+print(result)  # 输出 JavaScript 方法的执行结果
 
 
-# 假设密文（十六进制格式）和密钥
-t = wait_data  # 加密的文本（十六进制格式）
-e = n  # 秘钥
 
-# 使用UTF-8编码解析密钥
-key = e.encode('utf-8')
-
-# 解密操作
-decrypted_string = decrypt_aes_ecb(t, key)
-
-# 调用自定义函数
-n = en(decrypted_string)
-print(n)  # 输出解密后的结果
