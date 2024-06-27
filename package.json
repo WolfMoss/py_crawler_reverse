@@ -2,6 +2,7 @@
   "dependencies": {
     "crypto-js": "^4.2.0",
     "jquery": "^3.7.1",
-    "jsdom": "^24.1.0"
+    "jsdom": "^24.1.0",
+    "pako": "^2.1.0"
   }
 }
