@@ -336,7 +336,7 @@ async def open_browser_zb(userobj):
                     print(pots)
                     for pot in pots:
                         # 在1000~3000随机一个值
-                        await new_page.wait_for_timeout(random.randint(500, 1500))
+                        await new_page.wait_for_timeout(random.randint(300, 800))
                         # 步骤2: 获取元素的边界框
                         box = await imgelement.bounding_box()
                         # 步骤4: 计算出最终的点击坐标
@@ -345,7 +345,7 @@ async def open_browser_zb(userobj):
                         # 步骤5: 点击坐标
                         await new_page.mouse.click(click_x, click_y)
 
-                    await new_page.wait_for_timeout(random.randint(500, 1000))
+                    await new_page.wait_for_timeout(random.randint(300, 800))
                     await new_page.click('.geetest_commit_tip')
 
                     # 先领取一个日常奖励过验证------------------------------------------
