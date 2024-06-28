@@ -139,7 +139,7 @@ async def gpageaaaaa():
         browser_window.minimize()
 
         try:
-            await gpage.wait_for_load_state('networkidle',timeout=20000)
+            await gpage.wait_for_load_state('load',timeout=20000)
         except Exception as e:
             print(f"Page loading timed out: {e}")
 
