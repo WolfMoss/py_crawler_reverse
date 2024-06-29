@@ -127,31 +127,39 @@ def validate_customer(device):
         #判断是否超时
         outtime = str(results[0][3])
         if current_time > outtime:
-            return "TIMEOUT"
-            db.close()
-        else:
 
+            db.close()
+            return "TIMEOUT"
+        else:
+            print("current_time===",current_time)
+            print("outtime===", outtime)
             db.close()
             return "1"
 
     else:
         cursor.execute(
-            f"SELECT * FROM jiedan_key WHERE appname='{app_name}'")
+            f"SELECT * FROM jiedan_key WHERE appname='{app_name}' and (hard_disk_serial_number='' or hard_disk_serial_number is null) ")
         results = cursor.fetchall()
         if len(results) <= 0:
             #卡密找不到纪录，不通过
             db.close()
             return "NO KM"
         else: #卡密符合，注册用户，通过
-            query = """
-                UPDATE jiedan_key 
-                SET hard_disk_serial_number = %s 
-                WHERE appname = %s
-            """
-            cursor.execute(query, (device.mac_address, app_name))
-            db.commit()
-            db.close()
-            return "1"
+            # 判断是否超时
+            outtime = str(results[0][3])
+            if current_time > outtime:
+                db.close()
+                return "TIMEOUT"
+            else:
+                query = """
+                    UPDATE jiedan_key 
+                    SET hard_disk_serial_number = %s 
+                    WHERE appname = %s
+                """
+                cursor.execute(query, (device.mac_address, app_name))
+                db.commit()
+                db.close()
+                return "1"
 
 
 
