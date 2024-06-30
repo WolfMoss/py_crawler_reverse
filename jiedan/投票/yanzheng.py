@@ -80,6 +80,6 @@ def method_name(appname):
 
 #验证---------------------------------------------------------------------
 
-# method_name('baidu_ocr400')
+# method_name('shuapiao34')
 # while True:
 #     pass
