@@ -93,7 +93,7 @@ class Helper:
     def choose_func_getproxy(self,proxy_cycle):
         self.getProxy(proxy_cycle)
 
-    def geturl_autoproxy(self,proxy_cycle,url,headers, session=requests.session()):
+    def get_url_autoproxy(self,proxy_cycle,url,headers, session=requests.session()):
         try:
             session.headers = headers
             res = session.get(url, proxies=self.proxies)
@@ -101,9 +101,9 @@ class Helper:
         except Exception as e:
             # print('换IP：', e,proxies,url)
             self.choose_func_getproxy(proxy_cycle)
-            return self.geturl(url, session, headers)
+            return self.get_url_autoproxy(url, session, headers)
 
-    def geturl_autoproxy(self,proxy_cycle,url,headers,body={}, session=requests.session()):
+    def post_url_autoproxy(self,proxy_cycle,url,headers,body={}, session=requests.session()):
         try:
             session.headers = headers
             res = session.post(url, proxies=self.proxies,json=body)
@@ -111,4 +111,4 @@ class Helper:
         except Exception as e:
             # print('换IP：', e,proxies,url)
             self.choose_func_getproxy(proxy_cycle)
-            return self.geturl_autoproxy(url, session, headers,body)
+            return self.post_url_autoproxy(url, session, headers,body)

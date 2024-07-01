@@ -127,21 +127,14 @@ Hwnd = int(Hwnd1, 16)
 
 p = AJ.KQHouTai(Hwnd, 'OL', 'DX', 'DX', '', 3)
 
+pots=[]
+for potitme in config['pots']:
+    potitmex=int(potitme.split(',')[0])
+    potitmey = int(potitme.split(',')[1])
+    zbobj = {'zb':(potitmex,potitmey),'tongzhi':0}
+    pots.append(zbobj)
 
-pots = [
-    {'zb':(106,210),
-     'tongzhi':0
-     },
-    {'zb':(280,210),
-     'tongzhi':0
-     },
-    {'zb':(455,210),
-     'tongzhi':0
-     },
-    {'zb':(106,380),
-     'tongzhi':0
-     }
-]
+
 
 xunhnum = len(pots)
 
