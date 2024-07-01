@@ -139,7 +139,7 @@ async def gpageaaaaa():
         browser_window.minimize()
 
         try:
-            await gpage.wait_for_load_state('load',timeout=20000)
+            await gpage.wait_for_load_state('networkidle',timeout=10000)
         except Exception as e:
             print(f"Page loading timed out: {e}")
 
@@ -192,20 +192,38 @@ async def capture_image_requests():
         print(monitor)
         # 定义响应拦截处理函数
         async def log_response(response):
+
             request = response.request
             if request.url.startswith("https://95598.cn/api/osg-web0004/open/c44/f05"):
-                body = await response.body()
-                # 将字节序列解码为字符串
-                body_str = body.decode('utf-8')
-                # 将字符串解析为 JSON 对象
-                try:
-                    body_json = json.loads(body_str)
-                except json.JSONDecodeError:
-                    print(f"无法解析响应体为 JSON: {body_str}")
+                # body = await response.body()
+                # # 将字节序列解码为字符串
+                # body_str = body.decode('utf-8')
+                # # 将字符串解析为 JSON 对象
+                # try:
+                #     body_json = json.loads(body_str)
+                # except json.JSONDecodeError:
+                #     print(f"无法解析响应体为 JSON: {body_str}")
+                # print("encryptData===",body_json['encryptData'])
+                # print("keycode===",request.headers['keycode'])
+                # imgres= await gpage.evaluate('({ arg1, arg2 }) => window.axibafuc1(arg1, arg2)', {'arg1': body_json['encryptData'], 'arg2': request.headers['keycode']})
+                page = context.pages[0]
+                # 使用 JavaScript 从 canvas 中提取图像数据
+                canvas_data = await page.evaluate('''() => {
+                    const canvases = document.querySelectorAll('canvas');
+                    const dataURIs = [];
+                    canvases.forEach(canvas => {
+                        dataURIs.push(canvas.toDataURL());
+                    });
+                    return dataURIs;
+                }''')
 
-                imgres= await gpage.evaluate('({ arg1, arg2 }) => window.axibafuc1(arg1, arg2)', {'arg1': body_json['encryptData'], 'arg2': request.headers['keycode']})
+
+
                 try:
-                    imgresjson = json.loads(imgres)['data']
+                    imgresjson = {}
+                    imgresjson['canvasSrc']=canvas_data[4]
+                    imgresjson['blockSrc'] = canvas_data[3]
+
                 except json.JSONDecodeError:
                     loc_dl = find_image(dlpng_template, monitor)
                     x = loc_dl[0]
@@ -255,4 +273,4 @@ async def capture_image_requests():
 # 主程序入口
 if __name__ == "__main__":
     #uvicorn.run(app, host="0.0.0.0", port=8000)
-    asyncio.run(gpageaaaaa())
+    asyncio.run(capture_image_requests())
