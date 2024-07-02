@@ -10,7 +10,7 @@ a = Analysis(
     ('page.js', '.'),
     ('dl.PNG', '.'),
     ('hk.PNG', '.'),
-    (r'C:\Users\Administrator\AppData\Local\Programs\Python\Python310\Lib\site-packages\playwright\driver','playwright/driver')
+    (r'E:\codes\Python\Python310\Lib\site-packages\playwright\driver','playwright/driver')
     ],
     hiddenimports=[],
     hookspath=[],
