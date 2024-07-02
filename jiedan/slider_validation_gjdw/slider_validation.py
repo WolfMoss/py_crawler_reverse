@@ -13,13 +13,10 @@ import cv2
 from io import BytesIO
 from PIL import Image
 import os
+import yanzheng
 
-#判断，如果当前时间大于2024-06-01 22:05，则退出程序
+yanzheng.method_name("gjdw")
 
-current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-# if current_time > "2024-06-02 20:00":
-#     #结束整个程序
-#     os._exit(0)
 
 
 # 获取脚本所在目录
@@ -35,7 +32,6 @@ dlpng = os.path.join(script_dir, 'dl.PNG')
 dlpng_template = cv2.imread(dlpng, 0)
 #----------------------------------------------
 
-#方法++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def find_window_by_title(partial_title):
     # 获取当前打开的所有窗口
     all_windows = gw.getAllWindows()
@@ -102,8 +98,38 @@ def base64_to_cv2(base64_str):
     return opencv_image
 
 def find_gap_center(background_img_path, template_img_path):
+    # 解码Base64字符串并打开图像
+    image_data = base64.b64decode(template_img_path)
+    image = Image.open(BytesIO(image_data)).convert("RGBA")
+    datas = image.getdata()
+    new_data = []
+    for item in datas:
+        # 更改白色背景（可以调整容差）
+        if item[:3] == (255, 255, 255):
+            new_data.append((255, 255, 255, 0))  # 将白色像素变为透明
+        else:
+            new_data.append(item)
+    image.putdata(new_data)
+    # 转换为NumPy数组以便进一步处理
+    arr = np.array(image)
+    # 获取非透明像素的边界
+    non_white_pixels = np.where(arr[:, :, 3] != 0)
+    if non_white_pixels[0].size == 0 or non_white_pixels[1].size == 0:
+        return None  # 如果没有非白色像素，返回None或其他适当的值
+    # 获取边界值
+    top, bottom = np.min(non_white_pixels[0]), np.max(non_white_pixels[0])
+    left, right = np.min(non_white_pixels[1]), np.max(non_white_pixels[1])
+    # 裁剪图像
+    cropped_image = image.crop((left, top, right + 1, bottom + 1))
+    # 将图像转换为Base64字符串
+    buffered = BytesIO()
+    cropped_image.save(buffered, format="PNG")
+    tmbase64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    #print(tmbase64_image)
+
+
     # 读取背景图和模板图
-    template = base64_to_cv2(template_img_path)
+    template = base64_to_cv2(tmbase64_image)
     background = base64_to_cv2(background_img_path)
 
     # 获取模板图像的宽度
@@ -195,6 +221,8 @@ async def capture_image_requests():
 
             request = response.request
             if request.url.startswith("https://95598.cn/api/osg-web0004/open/c44/f05"):
+                page = context.pages[0]
+                await  page.wait_for_timeout(5000)
                 # body = await response.body()
                 # # 将字节序列解码为字符串
                 # body_str = body.decode('utf-8')
@@ -206,7 +234,8 @@ async def capture_image_requests():
                 # print("encryptData===",body_json['encryptData'])
                 # print("keycode===",request.headers['keycode'])
                 # imgres= await gpage.evaluate('({ arg1, arg2 }) => window.axibafuc1(arg1, arg2)', {'arg1': body_json['encryptData'], 'arg2': request.headers['keycode']})
-                page = context.pages[0]
+
+                print("page===",await page.title())
                 # 使用 JavaScript 从 canvas 中提取图像数据
                 canvas_data = await page.evaluate('''() => {
                     const canvases = document.querySelectorAll('canvas');
@@ -217,14 +246,35 @@ async def capture_image_requests():
                     return dataURIs;
                 }''')
 
-
+                print(len(canvas_data))
 
                 try:
                     imgresjson = {}
-                    imgresjson['canvasSrc']=canvas_data[1]
-                    imgresjson['blockSrc'] = canvas_data[0]
+                    imgresjson['bj']=canvas_data[0]
+                    imgresjson['tm'] = canvas_data[1]
 
-                except json.JSONDecodeError:
+                    xpoit = find_gap_center(str(imgresjson['bj']).replace('data:image/png;base64,',''), str(imgresjson['tm']).replace('data:image/png;base64,',''))
+                    xpoit=xpoit-23
+
+                    loczb = find_image(h_pai_template, monitor)
+                    print(loczb)
+                    #await asyncio.sleep(10)
+
+                    if loczb:
+                        x=loczb[0]+10
+                        y=loczb[1]+10
+
+                        # 移动鼠标到元素的中心位置
+                        pyautogui.moveTo(x, y, duration=0.1)
+                        # 鼠标按下
+                        pyautogui.mouseDown()
+                        pyautogui.moveTo(x+xpoit, y, duration=1)
+                        #鼠标松开
+                        pyautogui.mouseUp()
+                    else:
+                        print("滑块元素未找到")
+                except Exception as e:
+                    print(e)
                     loc_dl = find_image(dlpng_template, monitor)
                     x = loc_dl[0]
                     y = loc_dl[1]
@@ -234,28 +284,7 @@ async def capture_image_requests():
                     await asyncio.sleep(0.01)
                     pyautogui.mouseUp()
 
-                # print(f"解密后的移动图片=== {imgresjson['blockSrc']}")
-                # print(f"解密后的背景图片=== {imgresjson['canvasSrc']}")
-                xpoit = find_gap_center(str(imgresjson['canvasSrc']).replace('data:image/png;base64,',''), str(imgresjson['blockSrc']).replace('data:image/png;base64,',''))
-                xpoit=xpoit-23
 
-                loczb = find_image(h_pai_template, monitor)
-                print(loczb)
-                #await asyncio.sleep(10)
-
-                if loczb:
-                    x=loczb[0]+10
-                    y=loczb[1]+10
-
-                    # 移动鼠标到元素的中心位置
-                    pyautogui.moveTo(x, y, duration=0.1)
-                    # 鼠标按下
-                    pyautogui.mouseDown()
-                    pyautogui.moveTo(x+xpoit, y, duration=1)
-                    #鼠标松开
-                    pyautogui.mouseUp()
-                else:
-                    print("滑块元素未找到")
 
         # 设置拦截器
         context.on("response", log_response)
