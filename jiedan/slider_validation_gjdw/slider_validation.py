@@ -221,8 +221,8 @@ async def capture_image_requests():
 
                 try:
                     imgresjson = {}
-                    imgresjson['canvasSrc']=canvas_data[4]
-                    imgresjson['blockSrc'] = canvas_data[3]
+                    imgresjson['canvasSrc']=canvas_data[1]
+                    imgresjson['blockSrc'] = canvas_data[0]
 
                 except json.JSONDecodeError:
                     loc_dl = find_image(dlpng_template, monitor)
