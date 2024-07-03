@@ -8,8 +8,8 @@ from screeninfo import get_monitors
 import ast
 with open('config.json', 'r') as f:
     config = json.load(f)
-# import km_yanzheng
-# km_yanzheng.method_name(config['km'])
+import yanzheng
+yanzheng.method_name('kongtou')
 maxi = 0
 
 command = config['chromepath']
@@ -110,57 +110,74 @@ async def main():
                 page = await context.new_page()
                 await page.set_viewport_size({"width": screen_width, "height": screen_height})
 
-                # 等待弹出的窗口并捕获它
-                async with context.expect_page() as new_page_info:
-                    await page.goto('https://app.galxe.com/quest/IoTeX/GCqr8tgiEu')
-                    await page.wait_for_load_state('load',timeout=60000)
-                    await page.wait_for_timeout(2000)
-                    await page.wait_for_selector("button:has-text('Log in')",timeout=60000)
-                    await page.locator("button:has-text('Log in')").nth(0).click()
-                    await page.wait_for_load_state('load')
-                    await page.wait_for_timeout(2000)
-                    # # 查找包含MetaMask子元素的父div
-                    # target_div = page.locator(
-                    #     "div.col-span-2.sm\\:col-span-4.text-sm.font-bold >> div.flex.justify-between.items-center.h-\\[56px\\].rounded-8.cursor-pointer.border-component-dialog.border.hover\\:border-white.active\\:border-\\[\\#FFFFFF80\\].px-4.py-3\\.5:has(div:has-text('MetaMask'))")
-                    # # 验证找到的div数量
-                    # count = await target_div.count()
-                    # print(f"Found {count} div(s) containing a child div with text 'MetaMask'")
-                    # # 示例操作: 如果找到了至少一个这样的div，点击第一个
-                    # if count > 0:
-                    #     await target_div.nth(0).click()
-                    # else:
-                    #     raise Exception("找不到登录按钮")
-                    await page.wait_for_selector("div.ml-3:has-text('MetaMask')", timeout=60000)
-                    await page.locator("div.ml-3:has-text('MetaMask')").click()
-                    await page.wait_for_timeout(3000)
-
-                metamask_page = await new_page_info.value
-                await metamask_page.wait_for_timeout(2000)
-                # 在 MetaMask 窗口上执行操作
-                await metamask_page.wait_for_load_state('load',timeout=60000)
-                # 示例操作：输入密码并点击登录
-                await metamask_page.fill('input[type="password"]', '12345678')  # 替换为实际的密码字段选择器
-                await metamask_page.wait_for_selector("button:has-text('登录')", timeout=60000)
-                await metamask_page.locator("button:has-text('登录')").click()
-                await metamask_page.wait_for_load_state('load')
-                await metamask_page.wait_for_selector("button:has-text('下一步')", timeout=60000)
-                await metamask_page.locator("button:has-text('下一步')").click()
-                await metamask_page.wait_for_load_state('load')
-                await metamask_page.wait_for_selector("button:has-text('确认')", timeout=60000)
-                await metamask_page.locator("button:has-text('确认')").click()
                 try:
+                    # 等待弹出的窗口并捕获它
+                    async with context.expect_page() as new_page_info:
+                        await page.goto('https://app.galxe.com/quest/IoTeX/GCqr8tgiEu')
+                        await page.wait_for_load_state('load',timeout=10000)
+                        await page.wait_for_timeout(2000)
+                        print("等待找登录")
+                        await page.wait_for_function(
+                            """
+                            () => {
+                                const buttons = document.querySelectorAll('button');
+                                return Array.from(buttons).some(button => button.textContent.includes('Log in'));
+                            }
+                            """,
+                            timeout=10000
+                        )
+                        #await page.wait_for_selector("button:has-text('Log in')",timeout=10000)
+                        await page.locator("button:has-text('Log in')").nth(0).click()
+                        await page.wait_for_load_state('load')
+                        await page.wait_for_timeout(2000)
+                        # await page.waitForFunction("""
+                        #     () = > document.querySelector("div.ml-3") & & document.querySelector(
+                        #     "div.ml-3").textContent.includes('MetaMask'),
+                        #            {timeout: 60000}"""
+                        # );
+
+                        await page.wait_for_selector("div.ml-3:has-text('MetaMask')", timeout=10000)
+                        await page.locator("div.ml-3:has-text('MetaMask')").click()
+                        await page.wait_for_timeout(3000)
+
+                    metamask_page = await new_page_info.value
+                    await metamask_page.wait_for_timeout(2000)
+                    # 在 MetaMask 窗口上执行操作
+                    await metamask_page.wait_for_load_state('load',timeout=60000)
+                    # 示例操作：输入密码并点击登录
+                    await metamask_page.fill('input[type="password"]', '12345678')  # 替换为实际的密码字段选择器
                     await metamask_page.wait_for_selector("button:has-text('登录')", timeout=5000)
                     await metamask_page.locator("button:has-text('登录')").click()
-                except:
+                    await metamask_page.wait_for_load_state('load')
+                    await metamask_page.wait_for_selector("button:has-text('下一步')", timeout=5000)
+                    await metamask_page.locator("button:has-text('下一步')").click()
+                    await metamask_page.wait_for_load_state('load')
+                    await metamask_page.wait_for_selector("button:has-text('确认')", timeout=5000)
+                    await metamask_page.locator("button:has-text('确认')").click()
+
+                    await metamask_page.wait_for_selector("button:has-text('登录')", timeout=5000)
+                    await metamask_page.locator("button:has-text('登录')").click()
+                    await metamask_page.wait_for_load_state('load')
+                except Exception as e:
                     print("已登录")
-                await metamask_page.wait_for_load_state('load')
+
                 # 按下ESC键
-                await page.wait_for_timeout(1000)
+                await page.wait_for_timeout(1000*1)
                 await page.keyboard.press("Escape")
 
                 try:
                     async with context.expect_page(timeout=10000) as new_page_info:
-                        await page.wait_for_selector("p:has-text('Daily Visit the IoTeX Website')", timeout=10000)
+                        print("等到找验证")
+                        await page.wait_for_function(
+                            """
+                            () => {
+                                const paragraphs = document.querySelectorAll('p');
+                                return Array.from(paragraphs).some(p => p.textContent.includes('Daily Visit the IoTeX Website'));
+                            }
+                            """,
+                            timeout=10000
+                        )
+                        #await page.wait_for_selector("p:has-text('Daily Visit the IoTeX Website')", timeout=10000)
                         await page.locator("p:has-text('Daily Visit the IoTeX Website')").click()
 
                     yanzheng_page = await new_page_info.value
