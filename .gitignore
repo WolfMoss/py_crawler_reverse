@@ -162,3 +162,5 @@ node_modules
 userdata
 .idea
 /jiedan/baidu_ocr260/用款流水登记台账模板.xlsx
+chat-images
+/py_wechaty/wrest-windows-v0.26.3/logs
