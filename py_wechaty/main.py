@@ -11,4 +11,4 @@ async def connect_to_websocket():
             print(f"Message received from the server: {response}")
 
 # 运行客户端
-asyncio.get_event_loop().run_until_complete(connect_to_websocket())
+asyncio.run(connect_to_websocket())
