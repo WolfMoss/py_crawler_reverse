@@ -3,6 +3,9 @@ import requests
 from PySide6.QtWidgets import QApplication,QSystemTrayIcon, QWidget, QMessageBox, QMainWindow, QTextBrowser, QPushButton
 from PySide6.QtGui import QIcon
 from main_ui import Ui_Form
+import psutil
+import time
+import subprocess
 import ctypes
 user32 = ctypes.windll.user32
 import win32con
@@ -62,7 +65,8 @@ class MyMainWindow(QWidget):
 
         # 连接信号和槽
         self.ui.pushButton.clicked.connect(lambda:self.pushButton_click("Hello, World!"))
-
+        self.ui.anzhuangButton.clicked.connect(lambda: self.anzhuangButton_click("Hello, World!"))
+        self.ui.runButton.clicked.connect(lambda: self.runButton_click("Hello, World!"))
 
 
     # 函数
@@ -105,10 +109,33 @@ class MyMainWindow(QWidget):
                 print(e)
         QMessageBox.information(self, "信息", "启动完毕，所有wxid已发送完毕。")
 
+    def anzhuangButton_click(self, text):
+        # 对于Windows环境，不需要前面的'.'，直接使用文件名
+        subprocess.Popen(['WeChat3.9.2.23.exe'])
+
+        # # 如果你想确保在跨平台代码中使用相对路径，可以这样：
+        # import os
+        # subprocess.Popen([os.path.join('.', 'your_program.exe')])
+        #
+        # # 或者使用os.curdir常量，它等于'.'
+        # subprocess.Popen([os.path.join(os.curdir, 'your_program.exe')])
+
+    def runButton_click(self, text):
+        subprocess.Popen(['1.bat'])
+
+        while True:
+            """检查WeChat.exe是否在运行"""
+            for process in psutil.process_iter(['pid', 'name']):
+                if process.info['name'] == 'WeChat.exe':
+                    subprocess.Popen(['2.exe'])
+                    return
+
+            time.sleep(0.5)  # 每5秒检查一次
+
 
 if __name__ == '__main__':
-    hwnd = get_window_handle('cmd.exe')
-    hide_window(hwnd)
+    # hwnd = get_window_handle('cmd.exe')
+    # hide_window(hwnd)
 
 
     app = QApplication([])
