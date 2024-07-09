@@ -164,3 +164,6 @@ userdata
 /jiedan/baidu_ocr260/用款流水登记台账模板.xlsx
 chat-images
 /py_wechaty/wrest-windows-v0.26.3/logs
+/py_wechaty/ComWeChat-Client-v0.0.8/log
+/py_wechaty/ComWeChat-Client-v0.0.8/data
+/py_wechaty/ComWeChat-Client-v0.0.8/file_cache
